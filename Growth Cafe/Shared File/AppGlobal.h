@@ -9,7 +9,7 @@
 #import <Foundation/Foundation.h>
 
 @interface AppGlobal : NSObject
-
++ (NSString*)getServerURL;
 //Show warning message
 +(void)showAlertWithMessage:(NSString*)msg title:(NSString*)title;
 
@@ -34,6 +34,8 @@
 
 //string date cinver to nsdate
 +(NSDate*)convertStringDateToNSDate:(NSString*)str_date;
+// trim the string
++(NSString *)getMonthTimed:(NSString*)monthName;
 
 
 //read the File Data
@@ -73,7 +75,15 @@
 + (BOOL) validateUrlWithString: (NSString *) stringURL;
 //calculate the size
 +(CGSize)getTheExpectedSizeOfLabel:(NSString*) labelstring ;
++(CGSize)getTheExpectedSizeOfLabel:(NSString*) labelstring andFontSize:(int) fontsize labelWidth:(float )width;
+
 +(void)writeUserDataOnFile:(NSDictionary *)arrayData;
 +(UserDetails*)readUserDetail;
 +(NSString*) timeLeftSinceDate: (NSDate *)dateT;
++ (NSString*)removeUnwantedspaces:(NSString*)oldString;
+
++(void)setImageAvailableAtLocal:(NSString*)imgName AndImageData:(NSData*)arrayData;
++(NSData*)getImageAvailableAtLocal:(NSString*)imgName;
+
++(BOOL)checkImageAvailableAtLocal:(NSString*)imgName;
 @end

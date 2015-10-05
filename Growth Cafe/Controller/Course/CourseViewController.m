@@ -15,18 +15,22 @@
 #import "ProfileViewController.h"
 #import "LoginViewController.h"
 #import "UpdateProfileViewController.h"
+#import "AFHTTPRequestOperationManager.h"
+#import "FilterViewController.h"
 @interface CourseViewController ()
 {
    
    
     NSMutableArray *moduleArray; // array of arrays
     
+    AFNetworkReachabilityStatus previousStatus;
     int currentExpandedIndex;
+    NSMutableDictionary *filterDic;
 }
 @end
 
 @implementation CourseViewController
-@synthesize btnAssignment,btnCourses,btnMore,btnBack,btnNotification,btnUpdates,txtSearchBar,objCustom,coursesList,comeFromUpdate;
+@synthesize btnAssignment,btnCourses,btnMore,btnBack,btnNotification,btnUpdates,txtSearchBar,objCustom,coursesList,comeFromUpdate,btnFiler,viewFilter  ;
 - (id)initWithNibName:(NSString *)nibNameOrNil bundle:(NSBundle *)nibBundleOrNil {
     self = [super initWithNibName:nibNameOrNil bundle:nibBundleOrNil];
     if (self) {
@@ -74,9 +78,17 @@
     if ([self.navigationController respondsToSelector:@selector(interactivePopGestureRecognizer)]) {
         self.navigationController.interactivePopGestureRecognizer.enabled = NO;
     }
+    
+    filterDic =[[NSMutableDictionary alloc]init];
+    [filterDic setValue:@"0"forKey:@"schoolId"];
+    [filterDic setValue:@"0"forKey:@"classId"];
+    [filterDic setValue:@"0"forKey:@"homeRoomId"];
+    [filterDic setValue:@"0"forKey:@"courseId"];
+    [filterDic setValue:@"0"forKey:@"moduleId"];
+    
+    [filterDic setValue:@"2"forKey:@"status"];
+     previousStatus=[AFNetworkReachabilityManager sharedManager].networkReachabilityStatus;
     [self setSearchUI];
-    
-    
     btnCourses.selected=YES;
 //    UITapGestureRecognizer *tap = [[UITapGestureRecognizer alloc]
 //                                   initWithTarget:self
@@ -92,6 +104,16 @@
   
     // Do any additional setup after loading the view from its nib.
     [self setSearchUI];
+//    if([AppSingleton sharedInstance].userDetail.userRole!=2)
+//    {
+//        btnFiler.hidden=YES;
+//        CGRect rect= tableViewCourse.frame;
+//         if( rect.origin.y!=70){
+//        rect.size.height= rect.size.height+rect.origin.y-70;
+//        rect.origin.y=70;
+//        tableViewCourse.frame=rect;
+//         }
+//    }
     objCustom = [[CustomProfileView alloc] init];
     NSLog(@"%f,%f",self.view.frame.size.height,self.view.frame.size.width);
     objCustom.center = CGPointMake(200, 400);
@@ -103,11 +125,75 @@
     objCustom.view.frame=frame1;
        [objCustom.btnLogout  addTarget:self action:@selector(btnLogoutClick:) forControlEvents:UIControlEventTouchUpInside];
 }
+- (void)viewDidLayoutSubviews{
+    if([AppSingleton sharedInstance].userDetail.userRole!=2)
+    {
+        btnFiler.hidden=YES;
+        viewFilter.hidden=YES;
+        CGRect rect= tableViewCourse.frame;
+        if( rect.origin.y!=70){
+            rect.size.height= rect.size.height+rect.origin.y-70;
+            rect.origin.y=70;
+            tableViewCourse.frame=rect;
+        }
+    }else{
+        btnFiler.hidden=NO;
+        viewFilter.hidden=NO;
+        CGRect rect= tableViewCourse.frame;
+        
+        if( rect.origin.y==70){
+            rect.size.height= rect.size.height-(130-70);
+            rect.origin.y=130;
+            tableViewCourse.frame=rect;
+            
+        }
+    }
+}
 -(void)viewWillAppear:(BOOL)animated    {
+    if([AppSingleton sharedInstance].userDetail.userRole!=2)
+    {
+        btnFiler.hidden=YES;
+        viewFilter.hidden=YES;
+        CGRect rect= tableViewCourse.frame;
+        if( rect.origin.y!=70){
+            rect.size.height= rect.size.height+rect.origin.y-70;
+            rect.origin.y=70;
+            tableViewCourse.frame=rect;
+        }
+    }else{
+        btnFiler.hidden=NO;
+        viewFilter.hidden=NO;
+        CGRect rect= tableViewCourse.frame;
+        
+        if( rect.origin.y==70){
+            rect.size.height= rect.size.height-(130-70);
+            rect.origin.y=130;
+            tableViewCourse.frame=rect;
+            
+        }
+    }
     
+    [[AFNetworkReachabilityManager sharedManager] setReachabilityStatusChangeBlock:^(AFNetworkReachabilityStatus status) {
+        NSLog(@"Reachability: %@", AFStringFromNetworkReachabilityStatus(status));
+        if(status==AFNetworkReachabilityStatusNotReachable)
+        {   previousStatus=status;
+            [self showNetworkStatus:NO_INTERNET_MSG newVisibility:NO] ;
+        }else{
+            previousStatus=status;
+            [self showNetworkStatus:REESTABLISH_INTERNET_MSG newVisibility:YES];
+            
+        }
+        //       else  if(status!=AFNetworkReachabilityStatusNotReachable)
+        //       {
+        //           previousStatus=status;
+        //           [self showNetworkStatus:@""];
+        //
+        //       }
+    }];
+ [[AFNetworkReachabilityManager sharedManager] startMonitoring];
     
     if(!comeFromUpdate){
-        
+        if([coursesList count]==0)
         [self  getCourses:@""];
     }else{
         btnBack.hidden=NO;
@@ -118,6 +204,7 @@
         }
         
     }
+   
     UISwipeGestureRecognizer *recognizer = [[UISwipeGestureRecognizer alloc] initWithTarget:self action:@selector(swipeRecognizer:)];
     
     recognizer.direction = UISwipeGestureRecognizerDirectionRight;
@@ -237,12 +324,42 @@
     [self getCourses:searchBar.text];
    // [self searchTableList];
 }
-
+-(void)DidSelectFilter:(NSMutableDictionary * )dicfilter andSender:(id)sender
+{
+    filterDic=dicfilter;
+    [self getCourses:txtSearchBar.text];
+    [sender dismissViewControllerAnimated:YES completion:nil];
+    
+}
+-(void)DidNoSelectFilter:(id)sender
+{
+    [sender dismissViewControllerAnimated:YES completion:nil];
+}
 #pragma mark Course Private functions
 -(void) getCourses:(NSString *) txtSearch
 {
+    if(previousStatus==AFNetworkReachabilityStatusNotReachable)
+    {
+        [self showNetworkStatus:NO_INTERNET_MSG newVisibility:NO] ;
+        return;
+    }
+
    NSString *userid=[NSString  stringWithFormat:@"%@",[AppSingleton sharedInstance].userDetail.userId];
+    if([AppSingleton sharedInstance].userDetail.userRole==2)
+    {
+        
+        [self getTeacherCourses:userid];
+        
+    }else{
+        [self getStudentCourses:userid AndTextSearch:txtSearch];
+    }
     
+    
+    
+
+}
+-(void)getStudentCourses:(NSString *)userid AndTextSearch:(NSString *)txtSearch
+{
     //Show Indicator
     [appDelegate showSpinnerWithMessage:DATA_LOADING_MSG];
     
@@ -253,23 +370,49 @@
         for (Courses *course in coursesList) {
             [moduleArray addObject:course.moduleList];
         }
-
+        
         [tableViewCourse reloadData];
-              // [self loginSucessFullWithFB];
+        // [self loginSucessFullWithFB];
         
         //Hide Indicator
         [appDelegate hideSpinner];
     }
-                                     failure:^(NSError *error) {
-                                         //Hide Indicator
-                                         [appDelegate hideSpinner];
-                                         NSLog(@"failure JsonData %@",[error description]);
-                                         [self loginError:error];
-//                                         [self loginViewShowingLoggedOutUser:loginView];
-                                         
-                                     }];
+                               failure:^(NSError *error) {
+                                   //Hide Indicator
+                                   [appDelegate hideSpinner];
+                                   NSLog(@"failure JsonData %@",[error description]);
+                                   [self loginError:error];
+                                   //                                         [self loginViewShowingLoggedOutUser:loginView];
+                                   
+                               }];
+}
+-(void)getTeacherCourses:(NSString *)userid
+{
+    //Show Indicator
+    [appDelegate showSpinnerWithMessage:DATA_LOADING_MSG];
     
-
+    [[appDelegate _engine] getCourse:userid  AndFilter:filterDic success:^(NSMutableArray *courses) {
+        coursesList=courses;
+        moduleArray     = [NSMutableArray new];
+        currentExpandedIndex = -1;
+        for (Courses *course in coursesList) {
+            [moduleArray addObject:course.moduleList];
+        }
+        
+        [tableViewCourse reloadData];
+        // [self loginSucessFullWithFB];
+        
+        //Hide Indicator
+        [appDelegate hideSpinner];
+    }
+                               failure:^(NSError *error) {
+                                   //Hide Indicator
+                                   [appDelegate hideSpinner];
+                                   NSLog(@"failure JsonData %@",[error description]);
+                                   [self loginError:error];
+                                   //                                         [self loginViewShowingLoggedOutUser:loginView];
+                                   
+                               }];
 }
 -(void)loginError:(NSError*)error{
     
@@ -329,21 +472,22 @@
         NSCalendar* calendar = [NSCalendar currentCalendar];
         
         NSDate *date = [AppGlobal convertStringDateToNSDate: course.startedOn];
-        
+        if(date!=nil){
  
 
         NSDateComponents* components = [calendar components:NSCalendarUnitYear|NSCalendarUnitMonth|NSCalendarUnitDay fromDate:  date]; // Get necessary date components
         NSDateFormatter *df = [[NSDateFormatter alloc] init];
         NSString *monthName = [[df monthSymbols] objectAtIndex:(components.month-1)];
+        monthName=[AppGlobal getMonthTimed:monthName];
         [cell.lblDate setText: [NSString stringWithFormat:@"%@ %ld",monthName,(long)components.day]];
-      
+        }
         [cell.lblCourseName setText: course.courseName];
         [cell.probarCourse setProgress:[course.completedPercentStatus floatValue]*stepSize animated:YES  ];
         [cell.lblPercent  setText: [NSString stringWithFormat:@"%@ %s" ,course.completedPercentStatus,"%"]];
         if ([course.completedPercentStatus floatValue]==100.00) {
             cell.probarCourse.progressTintColor=[UIColor greenColor];
         }
-        
+       
         return cell;
     }else{
         static NSString *identifier = @"ModuleTableViewCell";
@@ -369,17 +513,18 @@
         
        
         NSDate *date = [AppGlobal convertStringDateToNSDate: module.startedOn];
-        
+        if(date!=nil)
+        {
         NSCalendar* calendar = [NSCalendar currentCalendar];
         NSDateComponents* components = [calendar components:NSCalendarUnitYear|NSCalendarUnitMonth|NSCalendarUnitDay fromDate:  date]; // Get necessary date components
  
         
         NSDateFormatter *df = [[NSDateFormatter alloc] init];
         NSString *monthName = [[df monthSymbols] objectAtIndex:(components.month-1)];
-        
+        monthName=[AppGlobal getMonthTimed:monthName];
        
         [cell.lblDate setText: [NSString stringWithFormat:@"%@ %ld",monthName,components.day]];
-        
+        }
         [cell.lblModuleName setText: module.moduleName];
         [cell.progressBarModule setProgress:[module.completedPercentStatus floatValue]* stepSize animated:YES  ];
         if ([module.completedPercentStatus floatValue]==100.00) {
@@ -396,6 +541,12 @@
 
 - (void)tableView:(UITableView *)tableView didSelectRowAtIndexPath:(NSIndexPath *)indexPath
     {
+        if(previousStatus==AFNetworkReachabilityStatusNotReachable)
+        {
+            [self showNetworkStatus:NO_INTERNET_MSG newVisibility:NO] ;
+                       
+            return;
+        }
 
     BOOL isChild =
     currentExpandedIndex > -1
@@ -418,10 +569,11 @@
     [tableViewCourse beginUpdates];
     
     if (currentExpandedIndex == indexPath.row) {
+         [tableView deselectRowAtIndexPath:indexPath animated:YES];
         [self collapseSubItemsAtIndex:currentExpandedIndex];
         currentExpandedIndex = -1;
     }
-else {
+    else {
     
     BOOL shouldCollapse = currentExpandedIndex > -1;
     
@@ -563,5 +715,21 @@ else {
     [self.navigationController pushViewController:viewCont animated:YES];
     
 }
+- (void)showNetworkStatus:(NSString *)status newVisibility:(BOOL)newVisibility
+{
+    
+    _lblStatus.text=status;
+    [_viewNetwork setHidden:newVisibility];
+}
 
+
+- (IBAction)btnClose:(id)sender {
+    [self showNetworkStatus:@"" newVisibility:YES];
+}
+- (IBAction)btnFilerClick:(id)sender {
+    FilterViewController *filerview=[[FilterViewController alloc]initWithNibName:@"FilterViewController" bundle:nil];
+    filerview.strComeFrom=@"c";
+    filerview.mDelegate=self;
+    [self presentViewController:filerview animated:YES  completion:nil];
+}
 @end

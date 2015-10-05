@@ -18,6 +18,9 @@
 #import "ProfileViewController.h"
 #import "SubCommentTableViewCell.h"
 #import "UpdateProfileViewController.h"
+#import "AFHTTPRequestOperationManager.h"
+#import <Social/Social.h>
+AFNetworkReachabilityStatus previousStatus;
 
 @interface ModuleDetailViewController ()
 {
@@ -37,6 +40,11 @@
     CGPoint mPreviousTouchPoint;
     EGRIDVIEW_SCROLLDIRECTION  mSwipeDirection;
     BOOL isTableSelect;
+    CGFloat screenHeight ;
+    NSMutableArray *tableViewCellsArray;
+      NSMutableArray *tableViewCellsRelatedResourseArray;
+    CGFloat screenWidth;
+    float currentTextHeight;
 }
 
 
@@ -65,6 +73,7 @@
     // Do any additional setup after loading the view from its nib.
     // Set up the image we want to scroll & zoom and add it to the scroll view
     //iOS7 Customization, swipe to pop gesture
+    previousStatus=[AFNetworkReachabilityManager sharedManager].networkReachabilityStatus;
     if ([self.navigationController respondsToSelector:@selector(interactivePopGestureRecognizer)]) {
         self.navigationController.interactivePopGestureRecognizer.enabled = NO;
     }
@@ -80,10 +89,9 @@
    // self.scrollView.contentInset.bottom=200.0f;
 
    //  self.scrollView.contentInset = UIEdgeInsetsMake(0, 0, -5, 0);
-    CGRect frame1 = self.cmtview.frame;
-    frame1=CGRectMake(0, self.view.frame.size.height+30, 320, 40);
-     txtframe=frame1;
-    self.cmtview.frame=frame1;
+   txtframe =CGRectMake(0, 1300, self.view.frame.size.width, 40);
+    
+    self.cmtview.frame=txtframe;
     [self.view addSubview:self.cmtview];
     btnCourses.selected=YES;
     
@@ -95,8 +103,8 @@
     NSLog(@"%f,%f",self.view.frame.size.height,self.view.frame.size.width);
     objCustom.center = CGPointMake(200, 400);
     CGRect profileFrame=objCustom.view.frame ;
-    CGFloat screenHeight = [UIScreen mainScreen].bounds.size.height;
-    CGFloat screenWidth = [UIScreen mainScreen].bounds.size.width;
+   screenHeight = [UIScreen mainScreen].bounds.size.height;
+   screenWidth = [UIScreen mainScreen].bounds.size.width;
     profileFrame.size.height=screenHeight-50;
     profileFrame.size.width=screenWidth;//200;
     objCustom.view.frame=profileFrame;
@@ -111,9 +119,35 @@
         
     }
     
+    
+    
+    
+
+    
+    
 }
 -(void)viewWillAppear:(BOOL)animated
 {
+    [super viewWillAppear:animated ];
+
+    [[AFNetworkReachabilityManager sharedManager] setReachabilityStatusChangeBlock:^(AFNetworkReachabilityStatus status) {
+        NSLog(@"Reachability: %@", AFStringFromNetworkReachabilityStatus(status));
+        if(status==AFNetworkReachabilityStatusNotReachable)
+        {   previousStatus=status;
+            [self showNetworkStatus:NO_INTERNET_MSG newVisibility:NO] ;
+        }else{
+            previousStatus=status;
+            [self showNetworkStatus:REESTABLISH_INTERNET_MSG newVisibility:YES];
+            
+        }
+        //       else  if(status!=AFNetworkReachabilityStatusNotReachable)
+        //       {
+        //           previousStatus=status;
+        //           [self showNetworkStatus:@""];
+        //
+        //       }
+    }];
+ [[AFNetworkReachabilityManager sharedManager] startMonitoring];
     /* Listen for keyboard */
     [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(keyboardWillShow:) name:UIKeyboardWillShowNotification object:nil];
     [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(keyboardWillHide:) name:UIKeyboardWillHideNotification object:nil];
@@ -126,6 +160,11 @@
     
     [objCustom.view addGestureRecognizer:recognizer];    //set Profile
     [objCustom setUserProfile];
+    tableViewCellsArray=[[NSMutableArray alloc]init];
+    tableViewCellsRelatedResourseArray=[[NSMutableArray alloc]init];
+    
+    
+    
     
 }
 
@@ -144,6 +183,8 @@
 
 -(void)viewDidDisappear:(BOOL)animated
 {
+    [super viewDidDisappear:animated ];
+
     /* remove for keyboard */
     [[NSNotificationCenter defaultCenter] removeObserver:self   name:UIKeyboardWillShowNotification object:nil];
    
@@ -154,8 +195,8 @@
 {
     if( UI_USER_INTERFACE_IDIOM() == UIUserInterfaceIdiomPhone ){
         
-        CGFloat screenHeight = [UIScreen mainScreen].bounds.size.height;
-        CGFloat screenWidth = [UIScreen mainScreen].bounds.size.width;
+        screenHeight = [UIScreen mainScreen].bounds.size.height;
+        screenWidth = [UIScreen mainScreen].bounds.size.width;
         if( screenHeight < screenWidth ){
             screenHeight = screenWidth;
         }
@@ -167,7 +208,7 @@
             [txtSearchBar setBackgroundImage:[UIImage imageNamed:@"img_search-boxn_6Small.png"]];
             
         } else if ( screenHeight > 480 ){
-           // [txtSearchBar setBackgroundImage:[UIImage imageNamed:@"img_search-boxn.png"]];
+          [txtSearchBar setBackgroundImage:[UIImage imageNamed:@"img_search-boxn_6Small.png"]];
             
             NSLog(@"iPhone 6 Plus");
         } else {
@@ -193,6 +234,13 @@
 */
 #pragma mark - table cell Action
 - (IBAction)btnUserProfileClick:(id)sender {
+    //Show Indicator
+    if(previousStatus==AFNetworkReachabilityStatusNotReachable)
+    {
+        [self showNetworkStatus:NO_INTERNET_MSG newVisibility:NO] ;
+        
+        return;
+    }
     UIButton *btn=(UIButton *)sender;
     // call the user profile service user profile
     
@@ -275,7 +323,13 @@
 }
 -(void)PlayTheVideo:(NSString *)stringUrl
 {
-    
+    //Show Indicator
+    if(previousStatus==AFNetworkReachabilityStatusNotReachable)
+    {
+        [self showNetworkStatus:NO_INTERNET_MSG newVisibility:NO] ;
+        
+        return;
+    }
     NSURL *url = [NSURL URLWithString:stringUrl];
     self.moviePlayer =  [[MPMoviePlayerController alloc]initWithContentURL:url];
     [[NSNotificationCenter defaultCenter] addObserver:self
@@ -327,6 +381,13 @@
     
 }
 - (IBAction)btnCommentOnResourceClick:(id)sender {
+    //Show Indicator
+    if(previousStatus==AFNetworkReachabilityStatusNotReachable)
+    {
+        [self showNetworkStatus:NO_INTERNET_MSG newVisibility:NO] ;
+        
+        return;
+    }
     UIButton *btn=(UIButton *)sender;
     NSInteger currentpage = (NSInteger)floor((self.scrollView.contentOffset.x * 2.0f + self.scrollView.frame.size.width) / (self.scrollView.frame.size.width * 2.0f));
 //    NSInteger currentpage=  page;
@@ -339,6 +400,13 @@
 
 }
 - (IBAction)btnLikeOnResourceClick:(id)sender {
+    //Show Indicator
+    if(previousStatus==AFNetworkReachabilityStatusNotReachable)
+    {
+        [self showNetworkStatus:NO_INTERNET_MSG newVisibility:NO] ;
+        
+        return;
+    }
     // call the service
     UIButton *btn=(UIButton *)sender;
     NSInteger currentpage = (NSInteger)floor((self.scrollView.contentOffset.x * 2.0f + self.scrollView.frame.size.width) / (self.scrollView.frame.size.width * 2.0f));
@@ -358,7 +426,15 @@
 
             //Hide Indicator
             [appDelegate hideSpinner];
-            [self getModuleDetail:searchText];
+            if(feedId==nil){
+                
+                [self getModuleDetail:searchText];
+                
+            }else{
+                [self getModuleDetailByFeed];
+                
+            }
+
         }
                                             failure:^(NSError *error) {
                                                 //Hide Indicator
@@ -370,10 +446,67 @@
                                             }];
 }
 - (IBAction)btnShareOnResourceClick:(id)sender {
+    
+    UIButton *btn=(UIButton *)sender;
+    NSInteger currentpage =
+    (NSInteger)floor((self.scrollView.contentOffset.x * 2.0f +
+                      self.scrollView.frame.size.width) / (self.scrollView.frame.size.width *
+                                                           2.0f));
+    
+    
+    // get the current Content
+    selectedResource=[contentList objectAtIndex:currentpage];
+    selectedResourceId=[NSString stringWithFormat:@"%ld", (long)btn.tag];
+    
+    
+    // get the current Content
+    
+    // Update *update=[arrayUpdates objectAtIndex:btn.tag];
+    NSURL *url = [NSURL URLWithString:selectedResource.resourceUrl];
+    if([SLComposeViewController
+        isAvailableForServiceType:SLServiceTypeFacebook]) {
+        SLComposeViewController * fbSheetOBJ = [SLComposeViewController
+                                                composeViewControllerForServiceType:SLServiceTypeFacebook];
+        
+//        NSString *strText = [NSString
+//                             stringWithFormat:@"%@",selectedResource.resourceDesc];
+        //      NSString *strText = [NSString stringWithFormat:@"%@\n%@",[self updateTitle:update],update.resource.resourceDesc];
+        [fbSheetOBJ  setInitialText:selectedResource.resourceDesc];
+        
+        [fbSheetOBJ addImage:[UIImage
+                              imageWithData:selectedResource.resourceImageData]];
+        
+        [fbSheetOBJ addURL:url];
+        
+        
+        
+        
+        [self presentViewController:fbSheetOBJ animated:YES
+                         completion:Nil];
+    }else {
+        
+        UIAlertView *alert = [[UIAlertView alloc]initWithTitle:@"Sign in!" message:@"Please Facebook Log In first !" delegate:nil
+                                             cancelButtonTitle:@"ok" otherButtonTitles:nil];
+        [alert show];
+        
+    }
+    
+    
+    
+    
+    
 }
+
 #pragma mark - Reply and like on Comment
 
 - (IBAction)btnReplyOnCommentClick:(id)sender {
+    //Show Indicator
+    if(previousStatus==AFNetworkReachabilityStatusNotReachable)
+    {
+        [self showNetworkStatus:NO_INTERNET_MSG newVisibility:NO] ;
+        
+        return;
+    }
     UIButton *btn=(UIButton *)sender;
     selectedCommentId=[NSString stringWithFormat:@"%ld", (long)btn.tag];
     actionOn=Comment;
@@ -381,6 +514,13 @@
 
 }
 - (IBAction)btnLikeOnCommentClick:(id)sender {
+    //Show Indicator
+    if(previousStatus==AFNetworkReachabilityStatusNotReachable)
+    {
+        [self showNetworkStatus:NO_INTERNET_MSG newVisibility:NO] ;
+        
+        return;
+    }
     UIButton *btn=(UIButton *)sender;
     selectedCommentId=[NSString stringWithFormat:@"%ld", (long)btn.tag];
     
@@ -391,7 +531,16 @@
        //Hide Indicator
         
         [appDelegate hideSpinner];
-           [self getModuleDetail:searchText];
+        
+        if(feedId==nil){
+            
+            [self getModuleDetail:searchText];
+            
+        }else{
+            [self getModuleDetailByFeed];
+            
+        }
+
     }
                                      failure:^(NSError *error) {
                                          //Hide Indicator
@@ -424,13 +573,20 @@
 
 - (IBAction)btnCommentDone:(id)sender {
     [txtViewCMT resignFirstResponder];
+    //Show Indicator
+    if(previousStatus==AFNetworkReachabilityStatusNotReachable)
+    {
+        [self showNetworkStatus:NO_INTERNET_MSG newVisibility:NO] ;
+        
+        return;
+    }
     if([txtViewCMT.text isEqualToString:@""])
     {
       //  [AppGlobal showAlertWithMessage:MISSING_COMMENT title:@""];
         txtViewCMT.text=@"";
-        CGRect frame1 = self.cmtview.frame;
-        frame1=CGRectMake(0, self.view.frame.size.height+30, 320, 40);
-        txtframe=frame1;
+       // CGRect frame1 = self.cmtview.frame;
+        txtframe=CGRectMake(0, self.view.frame.size.height+30, 320, 40);
+        //txtframe=frame1;
          step=0;
     }
    
@@ -445,7 +601,14 @@
             //Hide Indicator
             [appDelegate hideSpinner];
             txtViewCMT.text=@"";
-            [self getModuleDetail:searchText];
+            if(feedId==nil){
+                
+                [self getModuleDetail:searchText];
+                
+            }else{
+                [self getModuleDetailByFeed];
+                
+            }
         }
                                             failure:^(NSError *error) {
                                                 //Hide Indicator
@@ -464,7 +627,14 @@
             //Hide Indicator
             [appDelegate hideSpinner];
              txtViewCMT.text=@"";
-               [self getModuleDetail:searchText];
+            if(feedId==nil){
+                
+                [self getModuleDetail:searchText];
+                
+            }else{
+                [self getModuleDetailByFeed];
+                
+            }
         }
                                             failure:^(NSError *error) {
                                                 //Hide Indicator
@@ -482,9 +652,9 @@
 - (IBAction)btnCommentCancle:(id)sender {
      [txtViewCMT resignFirstResponder];
     txtViewCMT.text=@"";
-    CGRect frame1 = self.cmtview.frame;
-    frame1=CGRectMake(0, self.view.frame.size.height+30, 320, 40);
-    txtframe=frame1;
+    //CGRect frame1 = self.cmtview.frame;
+    txtframe=CGRectMake(0, self.view.frame.size.height+30, 320, 40);
+    //txtframe=frame1;
 
     step=0;
 }
@@ -521,13 +691,27 @@
 - (void)searchBarSearchButtonClicked:(UISearchBar *)searchBar {
     NSLog(@"Search Clicked");
     searchText=searchBar.text;
-  [self getModuleDetail:searchBar.text];
+    if(feedId==nil){
+        
+        [self getModuleDetail:searchText];
+        
+    }else{
+        [self getModuleDetailByFeed];
+        
+    }
     // [self searchTableList];
     isSearching=NO;
 }
 #pragma mark Course Private functions
 -(void) getModuleDetail:(NSString *) txtSearch
 {
+    //Show Indicator
+    if(previousStatus==AFNetworkReachabilityStatusNotReachable)
+    {
+        [self showNetworkStatus:NO_INTERNET_MSG newVisibility:NO] ;
+        
+        return;
+    }
     NSString *userid=[NSString  stringWithFormat:@"%@",[AppSingleton sharedInstance ].userDetail.userId];
     // userid=@"1";
     //Show Indicator
@@ -583,7 +767,13 @@
 }
 -(void) getModuleDetailByFeed
 {
-    
+    //Show Indicator
+    if(previousStatus==AFNetworkReachabilityStatusNotReachable)
+    {
+        [self showNetworkStatus:NO_INTERNET_MSG newVisibility:NO] ;
+        
+        return;
+    }
     [appDelegate showSpinnerWithMessage:DATA_LOADING_MSG];
     
     
@@ -608,7 +798,7 @@
         NSInteger pageCount = [contentList count];
         
         // Set up the page control
-         NSInteger page = (NSInteger)floor((self.scrollView.contentOffset.x * 2.0f + self.scrollView.frame.size.width) / (self.scrollView.frame.size.width * 2.0f));
+//         NSInteger page = (NSInteger)floor((self.scrollView.contentOffset.x * 2.0f + self.scrollView.frame.size.width) / (self.scrollView.frame.size.width * 2.0f));
          
 
         // Set up the content size of the scroll view
@@ -690,19 +880,21 @@
         customView.lblAutherName.text=resource.authorName;
         NSDate *dateSatrtedOn = [AppGlobal convertStringDateToNSDate:resource.startedOn];
         NSDate *dateCompletedOn = [AppGlobal convertStringDateToNSDate:resource.completedOn];
+        NSCalendar* calendar = [NSCalendar currentCalendar];
+        NSDateComponents* components ;
+        NSString *monthName;
+         NSDateFormatter *df = [[NSDateFormatter alloc] init];
         if(dateSatrtedOn!=nil)
         {
-        NSCalendar* calendar = [NSCalendar currentCalendar];
-        NSDateComponents* components = [calendar components:NSCalendarUnitYear|NSCalendarUnitMonth|NSCalendarUnitDay fromDate:  dateSatrtedOn]; // Get necessary date components
-        
-        
-        NSDateFormatter *df = [[NSDateFormatter alloc] init];
-        NSString *monthName = [[df monthSymbols] objectAtIndex:(components.month-1)];
-        resource.startedOn=[NSString stringWithFormat:@"%@ %ld,%ld",monthName,(long)components.day,(long)components.year];
-        
-        components = [calendar components:NSCalendarUnitYear|NSCalendarUnitMonth|NSCalendarUnitDay fromDate:  dateCompletedOn]; // Get necessary date components
+         components = [calendar components:NSCalendarUnitYear|NSCalendarUnitMonth|NSCalendarUnitDay fromDate:  dateSatrtedOn]; // Get necessary date components
         monthName = [[df monthSymbols] objectAtIndex:(components.month-1)];
-        resource.completedOn=[NSString stringWithFormat:@"%@ %ld,%ld",monthName,(long)components.day,(long)components.year];
+        resource.startedOn=[NSString stringWithFormat:@"%@ %ld,%ld",monthName,(long)components.day,(long)components.year];
+       
+        }
+        if(dateCompletedOn!=nil){
+            components = [calendar components:NSCalendarUnitYear|NSCalendarUnitMonth|NSCalendarUnitDay fromDate:  dateCompletedOn]; // Get necessary date components
+            monthName = [[df monthSymbols] objectAtIndex:(components.month-1)];
+            resource.completedOn=[NSString stringWithFormat:@"%@ %ld,%ld",monthName,(long)components.day,(long)components.year];
         }
         customView.lblStartedon.text=resource.startedOn;
         customView.lblCompletedon.text=resource.completedOn;
@@ -723,12 +915,15 @@
         // [customView.imgContent setImage:[AppGlobal generateThumbnail:resource.resourceUrl]];
        
          if(resource.resourceImageUrl!=nil){
-             
+             if([AppGlobal checkImageAvailableAtLocal:resource.resourceImageUrl])
+             {
+                 resource.resourceImageData=[AppGlobal getImageAvailableAtLocal:resource.resourceImageUrl];
+             }
              if (resource.resourceImageData==nil) {
                   NSURL *imageURL = [NSURL URLWithString:resource.resourceImageUrl];
                     dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_BACKGROUND, 0), ^{
                         resource.resourceImageData  = [NSData dataWithContentsOfURL:imageURL];
-        
+                        [AppGlobal setImageAvailableAtLocal:resource.resourceImageUrl AndImageData:resource.resourceImageData];
                         dispatch_async(dispatch_get_main_queue(), ^{
                             // Update the UI
                            customView.imgContent.image= [UIImage imageWithData: resource.resourceImageData ];
@@ -747,8 +942,10 @@
 
         [customView.btnComment addTarget:self action:@selector(btnCommentOnResourceClick:) forControlEvents:UIControlEventTouchUpInside];
         [customView.btnLike addTarget:self action:@selector(btnLikeOnResourceClick:) forControlEvents:UIControlEventTouchUpInside];
+        [customView.btnShare addTarget:self action:@selector(btnShareOnResourceClick:) forControlEvents:UIControlEventTouchUpInside];
         customView.btnComment.tag=[resource.resourceId integerValue];
         customView.btnLike.tag=[resource.resourceId integerValue];
+        customView.btnShare.tag=[resource.resourceId integerValue];
         // add vedio play
         
         [customView.btnPlay  addTarget:self action:@selector(btnPlayResourceClick:) forControlEvents:UIControlEventTouchUpInside];
@@ -760,6 +957,11 @@
             Comments *objComment=[resource.comments objectAtIndex:0];
             
             if(objComment.commentByImage!=nil){
+                
+                if([AppGlobal checkImageAvailableAtLocal:objComment.commentByImage])
+                {
+                    objComment.commentByImageData=[AppGlobal getImageAvailableAtLocal:objComment.commentByImage];
+                }
                 if(objComment.commentByImageData==nil)
                 {
                 NSURL *imageURL = [NSURL URLWithString:objComment.commentByImage];
@@ -767,6 +969,7 @@
                 dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_BACKGROUND, 0), ^{
                     NSData *imageData = [NSData dataWithContentsOfURL:imageURL];
                     objComment.commentByImageData=imageData;
+                    [AppGlobal setImageAvailableAtLocal:objComment.commentByImage AndImageData:objComment.commentByImageData];
                     dispatch_async(dispatch_get_main_queue(), ^{
                         // Update the UI
                         //customView.imgViewCmtBy.image= [UIImage imageWithData:imageData];
@@ -792,7 +995,7 @@
             NSMutableAttributedString *attributedString = [[NSMutableAttributedString alloc] initWithString:str];
             
             // Set font, notice the range is for the whole string
-            UIFont *font = [UIFont fontWithName:@"HelveticaNeue-Bold" size:14];
+            UIFont *font = [UIFont fontWithName:@"HelveticaNeue-Bold" size:13];
             [attributedString addAttribute:NSFontAttributeName value:font range:NSMakeRange(0, [objComment.commentBy length])];
             [customView.lblCmtBy  setAttributedText:attributedString];
            
@@ -1008,7 +1211,7 @@
         if( scrollView.tag==20){
             if (scrollView.contentOffset.y >2)
             {
-                scrollDirection = ScrollDirectionDown;
+                //scrollDirection = ScrollDirectionDown;
                 
                 
                 self.lastContentOffset = scrollView.contentOffset.y;
@@ -1043,7 +1246,7 @@
         }else if( scrollView.tag==10){
             if (scrollView.contentOffset.y<-2)
             {
-                scrollDirection = ScrollDirectionDown;
+               // scrollDirection = ScrollDirectionDown;
                 
                 
                 self.lastContentOffsetOfTable = scrollView.contentOffset.y;
@@ -1239,11 +1442,16 @@
        
         cell.lblCompletedon.text=selectedResource.completedOn;
         if(selectedResource.resourceImageUrl!=nil){
-            
+            if([AppGlobal checkImageAvailableAtLocal:selectedResource.resourceImageUrl])
+            {
+                selectedResource.resourceImageData=[AppGlobal getImageAvailableAtLocal:selectedResource.resourceImageUrl];
+            }
             if (selectedResource.resourceImageData==nil) {
                 NSURL *imageURL = [NSURL URLWithString:selectedResource.resourceImageUrl];
                 dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_BACKGROUND, 0), ^{
                     selectedResource.resourceImageData  = [NSData dataWithContentsOfURL:imageURL];
+                    
+                    [AppGlobal setImageAvailableAtLocal:selectedResource.resourceImageUrl AndImageData:selectedResource.resourceImageData];
                  dispatch_async(dispatch_get_main_queue(), ^{
                     // Update the UI
                     UIImage *img=[UIImage imageWithData:selectedResource.resourceImageData];
@@ -1291,11 +1499,12 @@
 
         }else if ([assignmentList count]>0)
         {
-            cell.lblNextTitle.text=@"Assignment:";
+            cell.lblNextTitle.text=@"Assignments:";
 
         }else{
             cell.lblNextTitle.hidden=YES;
         }
+        [tableViewCellsArray addObject:cell];
         return cell;
     }else if(indexPath.section==1){
         Comments *comment= [selectedResource.comments objectAtIndex:indexPath.row];
@@ -1325,7 +1534,7 @@
             NSMutableAttributedString *attributedString = [[NSMutableAttributedString alloc] initWithString:str];
             
             // Set font, notice the range is for the whole string
-            UIFont *font = [UIFont fontWithName:@"HelveticaNeue-Bold" size:14];
+            UIFont *font = [UIFont fontWithName:@"HelveticaNeue-Bold" size:13];
             [attributedString addAttribute:NSFontAttributeName value:font range:NSMakeRange(0, [comment.commentBy length])];
             [cell.lblCmtBy setAttributedText:attributedString];     //   cell.lblCmtDate.text=comment.commentDate;
         cell.lblCmtText.text=comment.commentTxt;
@@ -1339,6 +1548,11 @@
 
         
         if(comment.commentByImage!=nil){
+            if([AppGlobal checkImageAvailableAtLocal:comment.commentByImage])
+            {
+                comment.commentByImageData=[AppGlobal getImageAvailableAtLocal:comment.commentByImage];
+            }
+
             if(comment.commentByImageData==nil)
             {
 
@@ -1347,6 +1561,8 @@
             dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_BACKGROUND, 0), ^{
                 NSData *imageData = [NSData dataWithContentsOfURL:imageURL];
                 comment.commentByImageData=imageData;
+                [AppGlobal setImageAvailableAtLocal:comment.commentByImage AndImageData:comment.commentByImageData];
+
                 dispatch_async(dispatch_get_main_queue(), ^{
                     // Update the UI
                     UIImage *img=[UIImage imageWithData:imageData];
@@ -1416,11 +1632,12 @@
                 
             }else if ([assignmentList count]>0)
             {
-                cell.lblRelatedVideo.text=@"Assignment:";
+                cell.lblRelatedVideo.text=@"Assignments:";
                 
             }else{
              cell.lblRelatedVideo.hidden=YES;
             }
+            [tableViewCellsArray addObject:cell];
         return cell;
         }else{
             
@@ -1447,7 +1664,7 @@
             NSMutableAttributedString *attributedString = [[NSMutableAttributedString alloc] initWithString:str];
             
             // Set font, notice the range is for the whole string
-            UIFont *font = [UIFont fontWithName:@"HelveticaNeue-Bold" size:14];
+            UIFont *font = [UIFont fontWithName:@"HelveticaNeue-Bold" size:13];
             [attributedString addAttribute:NSFontAttributeName value:font range:NSMakeRange(0, [comment.commentBy length])];
             [cell.lblCmtBy setAttributedText:attributedString];
            // cell.lblCmtDate.text=comment.commentDate;
@@ -1462,6 +1679,10 @@
             
             
             if(comment.commentByImage!=nil){
+                if([AppGlobal checkImageAvailableAtLocal:comment.commentByImage])
+                {
+                    comment.commentByImageData=[AppGlobal getImageAvailableAtLocal:comment.commentByImage];
+                }
                 if(comment.commentByImageData==nil)
                 {
                     
@@ -1470,6 +1691,8 @@
                     dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_BACKGROUND, 0), ^{
                         NSData *imageData = [NSData dataWithContentsOfURL:imageURL];
                         comment.commentByImageData=imageData;
+                        [AppGlobal setImageAvailableAtLocal:comment.commentByImage AndImageData:comment.commentByImageData];
+
                         dispatch_async(dispatch_get_main_queue(), ^{
                             // Update the UI
                             UIImage *img=[UIImage imageWithData:imageData];
@@ -1538,12 +1761,12 @@
                 
             }else if ([assignmentList count]>0)
             {
-                cell.lblRelatedVideo.text=@"Assignment:";
+                cell.lblRelatedVideo.text=@"Assignments:";
                 
             }else{
                 cell.lblRelatedVideo.hidden=YES;
             }
-
+[tableViewCellsArray addObject:cell];
             return cell;
         }
         
@@ -1567,7 +1790,7 @@
         NSMutableAttributedString *attributedString = [[NSMutableAttributedString alloc] initWithString:str];
         
         // Set font, notice the range is for the whole string
-        UIFont *font = [UIFont fontWithName:@"HelveticaNeue-Bold" size:14];
+        UIFont *font = [UIFont fontWithName:@"HelveticaNeue-Bold" size:13];
         [attributedString addAttribute:NSFontAttributeName value:font range:NSMakeRange(3, [resource.authorName length])];
         [cell.lblContentby setAttributedText:attributedString];
 
@@ -1575,13 +1798,17 @@
         NSDate * submittedDate=[AppGlobal convertStringDateToNSDate:resource.uploadedDate];
        
         if(resource.resourceImageUrl!=nil){
+            if([AppGlobal checkImageAvailableAtLocal:resource.resourceImageUrl])
+            {
+                resource.resourceImageData=[AppGlobal getImageAvailableAtLocal:resource.resourceImageUrl];
+            }
             if(resource.resourceImageData==nil)
             {
             NSURL *imageURL = [NSURL URLWithString:resource.resourceImageUrl];
             
             dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_BACKGROUND, 0), ^{
                 resource.resourceImageData = [NSData dataWithContentsOfURL:imageURL];
-             
+               [AppGlobal setImageAvailableAtLocal:resource.resourceImageUrl AndImageData:resource.resourceImageData];
                 dispatch_async(dispatch_get_main_queue(), ^{
                     // Update the UI
                     
@@ -1661,12 +1888,12 @@
         }
         if ([assignmentList count]>0)
         {
-            cell.lblAssignment.text=@"Assignment:";
+            cell.lblAssignment.text=@"Assignments:";
             
         }else{
             cell.lblAssignment.hidden=YES;
         }
-
+        [tableViewCellsRelatedResourseArray addObject:cell];
         return cell;
         
     }
@@ -1689,7 +1916,7 @@
         NSMutableAttributedString *attributedString = [[NSMutableAttributedString alloc] initWithString:str];
         
         // Set font, notice the range is for the whole string
-        UIFont *font = [UIFont fontWithName:@"HelveticaNeue-Bold" size:14];
+        UIFont *font = [UIFont fontWithName:@"HelveticaNeue-Bold" size:13];
         [attributedString addAttribute:NSFontAttributeName value:font range:NSMakeRange(3, [assignment.assignmentSubmittedBy length])];
         [cell.lblContentby setAttributedText:attributedString];
         
@@ -1698,6 +1925,10 @@
         {
         
         if(resource.resourceImageUrl!=nil){
+            if([AppGlobal checkImageAvailableAtLocal:resource.resourceImageUrl])
+            {
+                resource.resourceImageData=[AppGlobal getImageAvailableAtLocal:resource.resourceImageUrl];
+            }
             if(resource.resourceImageData==nil)
             {
             NSURL *imageURL = [NSURL URLWithString:resource.resourceImageUrl];
@@ -1705,7 +1936,7 @@
             dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_BACKGROUND, 0), ^{
                
                      resource.resourceImageData = [NSData dataWithContentsOfURL:imageURL];
-                
+                  [AppGlobal setImageAvailableAtLocal:resource.resourceImageUrl AndImageData:resource.resourceImageData];
                dispatch_async(dispatch_get_main_queue(), ^{
                     // Update the UI
                     //cell.imgContentURL.image= [UIImage imageWithData:imageData];
@@ -1754,13 +1985,14 @@
             if([assignmentList count]>3)
             {
                 [cell.btnMore addTarget:self action:@selector(btnMoreRelatedVideoClick:) forControlEvents:UIControlEventTouchUpInside];
-                [cell.btnMore setTitle:[NSString stringWithFormat:@"+%lu More",[assignmentList count ]-3]  forState:UIControlStateNormal];
+                [cell.btnMore setTitle:[NSString stringWithFormat:@"+%u More",[assignmentList count ]-3]  forState:UIControlStateNormal];
             }else{
                 cell.btnMore.hidden=YES;
             }
         }
         
          cell.lblAssignment.hidden=YES;
+        [tableViewCellsArray addObject:cell];
         return cell;
     }
 
@@ -1835,44 +2067,89 @@
 
 - (CGFloat)tableView:(UITableView *)tableView heightForRowAtIndexPath:(NSIndexPath *)indexPath
 {
+//    int section=indexPath.section;
+//    //add the cells to a mutable array
+//    if(section==2 && IsRelatedConentExpended)
+//    {
+//        //the nil scenario happens when the cell is created for first time
+//        if([tableViewCellsRelatedResourseArray count]>indexPath.row){
+//        UITableViewCell *cell=[tableViewCellsRelatedResourseArray objectAtIndex:indexPath.row];
+//        //your code here
+//          AssignmentTableViewCell *cmtcell=(AssignmentTableViewCell*)cell;
+//            NSLog(@"%f",cmtcell.lblContentName.frame.size.width);
+//        }
+//
+//         [selectedResource.relatedResources count];
+//    }
+//    else if(section==2 && !IsRelatedConentExpended)
+//    {
+//        //the nil scenario happens when the cell is created for first time
+//       
+//        //your code here
+//        if([tableViewCellsRelatedResourseArray count]>indexPath.row){
+//             UITableViewCell *cell=[tableViewCellsRelatedResourseArray objectAtIndex:indexPath.row];
+//        AssignmentTableViewCell *cmtcell=(AssignmentTableViewCell*)cell;
+//        NSLog(@"%f",cmtcell.lblContentName.frame.size.width);
+//        }
+//        
+//       
+//    }
+   
+       
+    
+   
+    
     if(selectedResource==nil)
         return 0;
     if(indexPath.section==0)
         return 430.0f;
     else if(indexPath.section==1 && selectedResource.comments>0)
     {
-        Comments *cmt=selectedResource.comments[indexPath.row];
-        CGSize labelSize=[AppGlobal getTheExpectedSizeOfLabel:cmt.commentTxt];
-        float height=0.0f;
+        
+        
+                      float height=0.0f;
         NSLog(@"%ld",(long)indexPath.row);
         if(([selectedResource.comments count]<3) && (indexPath.row==[selectedResource.comments count]-1))
         {
-           height=80.0f;
+           height=55.0f;
                 
         }
         else if([selectedResource.comments count]>=3)
         {
             if(IsCommentExpended && (indexPath.row==[selectedResource.comments count]-1))
             {
-                 height=80.0f;
+                 height=55.0f;
             }else if(indexPath.row==2 && !IsCommentExpended){
-             height=80.0f;
+             height=55.0f;
             }
             
         }
+        Comments *comment=selectedResource.comments[indexPath.row];
+        float width=200;
+        if( screenHeight <740 && screenHeight >667 )
+        {
+            width=298;
+            
+        }else if  (screenHeight > 568 && screenHeight <= 667 )
+        {
+            width=270;
+        }
+        CGSize labelSize=[AppGlobal   getTheExpectedSizeOfLabel:comment.commentTxt andFontSize:13 labelWidth:width];
         
-        if(labelSize.height>17)
-                return   height=height+80+labelSize.height-17.0;
+                if(labelSize.height>17)
+               return   height=height+80+labelSize.height-17.0;
             else
                 return  height=height+80;
     }
     else if(indexPath.section==2 )
     {
-        float height=17.0f;
-       
+        float height=78.0f;   ///////////////////change the height from 73 to 78 by raj
+        static NSString *identifier = @"AssignmentTableViewCell";
+        AssignmentTableViewCell *cell = (AssignmentTableViewCell *)[tableView dequeueReusableCellWithIdentifier:identifier];
+        NSLog(@"%f",cell.lblContentName.frame.size.width);
         if(([selectedResource.relatedResources count]<3) && (indexPath.row==[selectedResource.relatedResources count]-1))
         {
-            height=75.0f;
+            height=height+50.0f;
             
             
             
@@ -1881,19 +2158,69 @@
         {
             if(IsRelatedConentExpended && (indexPath.row==[selectedResource.relatedResources count]-1))
             {
-                height=75.0f;
+                height=height+60.0f;
             }else if(indexPath.row==2 && !IsRelatedConentExpended){
-                height=75.0f;
+                height=height+66.0f;
             }
             
         }
+       
         Resourse *realtedResource=selectedResource.relatedResources[indexPath.row];
-        CGSize labelSize=[AppGlobal getTheExpectedSizeOfLabel:realtedResource.resourceTitle];
+        float width=200;
+        if( screenHeight <740 && screenHeight >667 )
+        {
+            width=298;
+            
+        }else if  (screenHeight > 568 && screenHeight <= 667 )
+        {
+            width=270;
+        }
+        CGSize labelSize=[AppGlobal   getTheExpectedSizeOfLabel:realtedResource.resourceTitle andFontSize:14 labelWidth:width];
         
-        if(labelSize.height>17)
-             return  height=height+70.0f+labelSize.height;
-        else
-            return  height=height+70.0f;;
+        if (UI_USER_INTERFACE_IDIOM() == UIUserInterfaceIdiomPhone)  /////////////////   check for device by raj
+            
+                            {
+            
+                                if(labelSize.height>17){
+                                    return  height=height+labelSize.height-17;
+                                }
+                                
+                                
+                                else if([realtedResource.resourceTitle length]>34 &&  (screenHeight > 480 && screenHeight < 667 ))
+                                {
+                                    
+                                    return  height=height+labelSize.height;
+                                }else if([realtedResource.resourceTitle length]>42 &&  screenHeight < 480)
+                                {
+                                    
+                                    return  height=height+labelSize.height;
+                                }
+            
+                           }
+ 
+    
+
+            
+            
+      
+//       if(labelSize.height>17){
+//             return  height=height+labelSize.height-17;
+//        }
+//        
+//        
+//        else if([realtedResource.resourceTitle length]>34 &&  (screenHeight > 480 && screenHeight < 667 ))
+//        {
+//            
+//            return  height=height+labelSize.height;
+//        }else if([realtedResource.resourceTitle length]>42 &&  screenHeight < 480)
+//        {
+//            
+//            return  height=height+labelSize.height;
+//        }
+        
+        return height;
+//        else
+//            return  height=height+70.0f;;
        
        
     
@@ -1902,18 +2229,60 @@
     else if(indexPath.section==3)
     {
 //
-        Assignment *assignment=[assignmentList objectAtIndex:indexPath.row];
-        float height=0.0f;
-        CGSize labelSize=[AppGlobal getTheExpectedSizeOfLabel:assignment.assignmentName];
+        float height=73.0f;
         
-        if(labelSize.height>17)
-            return  height=height+75.0f+labelSize.height-17.0;
-        else
-            return  height=height+75.0f;;
+        if(([assignmentList count]<3) && (indexPath.row==[assignmentList count]-1))
+        {
+            height=height+30.0f;
+            
+            
+            
+        }
+        else if([assignmentList count]>=3)
+        {
+            if(IsAsignmentExpended && (indexPath.row==[assignmentList count]-1))
+            {
+                height=height+56.0f;
+            }else if(indexPath.row==2 && !IsAsignmentExpended){
+                height=height+56.0f;
+            }
+            
+        }
+        Assignment *assignment=assignmentList[indexPath.row];
+       
+        float width=200;
+        if( screenHeight <740 && screenHeight >667 )
+        {
+            width=298;
+            
+        }else if  (screenHeight > 568 && screenHeight <= 667 )
+        {
+            width=270;
+        }
+        CGSize labelSize=[AppGlobal   getTheExpectedSizeOfLabel:assignment.assignmentName  andFontSize:13 labelWidth:width];
+        
+        //        if(labelSize.height>17){
+        return  height=height+labelSize.height-17;
+        // }
 
+//        
+//        if(labelSize.height>17){
+//            return  height=height+labelSize.height-10;
+//        }else if([assignment.assignmentName length]>34 &&  (screenHeight > 480 && screenHeight < 667 ))
+//        {
+//            
+//            return  height=height+labelSize.height;
+//        }else if([assignment.assignmentName length]>42 &&  screenHeight < 480)
+//        {
+//            
+//            return  height=height+labelSize.height;
+//        }
+       // return height;
 
     }
-    return 44.0f;
+    //create cell
+    
+       return 44.0f;
 }
 
 //- (void)tableView:(UITableView *)tableView willDisplayCell:(UITableViewCell *)cell forRowAtIndexPath:(NSIndexPath *)indexPath
@@ -1966,10 +2335,10 @@
     //    [UIView setAnimationDuration:0.3];
     if(!isSearching)
     {
-        CGRect frame1 = self.cmtview.frame;
-        frame1=CGRectMake(0, self.view.frame.size.height+30, 320, 40);
-        self.cmtview.frame = frame1;
-     txtframe=frame1;
+       // txtframe = self.cmtview.frame;
+        txtframe=CGRectMake(0, self.view.frame.size.height+30, 320, 40);
+        self.cmtview.frame = txtframe;
+       
     }
     //
     //    [UIView commitAnimations];
@@ -2011,13 +2380,29 @@
         step=step-1;
     }
     
+    float floatCheck=  [self doesFit:textView string:text range:range];
     if([text isEqualToString:@"\n"]&& step<2)
     {
         txtframe=CGRectMake(txtframe.origin.x, txtframe.origin.y-30, txtframe.size.width, txtframe.size.height+30);
         
         step=step+1;
         
+    }else if (!floatCheck && step<2)
+    {
+        txtframe=CGRectMake(txtframe.origin.x, txtframe.origin.y-30, txtframe.size.width, txtframe.size.height+30);
+        
+        step=step+1;
+        
+        
     }
+    else if (floatCheck==2 && step >0)
+    {
+        txtframe=CGRectMake(txtframe.origin.x, txtframe.origin.y+30, txtframe.size.width, txtframe.size.height-30);
+        
+        step=step-1;
+        
+    }
+    
     //    CGRect frame1 = frame;
     //    frame1=CGRectMake(0, self.view.frame.size.height+30, 320, 40);
     
@@ -2025,6 +2410,41 @@
     
     
     return YES;
+    // Check if the text exceeds the size of the UITextView
+    
+    
+}
+- (float)doesFit:(UITextView*)textView string:(NSString *)myString range:(NSRange) range;
+{
+    // Get the textView frame
+    float viewHeight = textView.frame.size.height;
+    float width = textView.textContainer.size.width;
+    
+    NSMutableAttributedString *atrs = [[NSMutableAttributedString alloc] initWithAttributedString: textView.textStorage];
+    [atrs replaceCharactersInRange:range withString:myString];
+    
+    NSTextStorage *textStorage = [[NSTextStorage alloc] initWithAttributedString:atrs];
+    NSTextContainer *textContainer = [[NSTextContainer alloc] initWithSize: CGSizeMake(width, FLT_MAX)];
+    NSLayoutManager *layoutManager = [[NSLayoutManager alloc] init];
+    
+    [layoutManager addTextContainer:textContainer];
+    [textStorage addLayoutManager:layoutManager];
+    float textHeight = [layoutManager
+                        usedRectForTextContainer:textContainer].size.height;
+    
+    if (textHeight >= viewHeight - 1) {
+        currentTextHeight=textHeight;
+        return NO;
+    } else if(currentTextHeight>textHeight)
+    {
+        currentTextHeight=textHeight;
+        return 2.0;
+        
+    }else{
+        
+        return YES;
+    }
+    return 0;
 }
 - (void)textViewDidChange:(UITextView *)textView{
     
@@ -2099,6 +2519,18 @@
     LoginViewController *viewCont= [[LoginViewController alloc]init];
     [self.navigationController pushViewController:viewCont animated:YES];
     
+}
+
+- (void)showNetworkStatus:(NSString *)status newVisibility:(BOOL)newVisibility
+{
+    
+    _lblStatus.text=status;
+    [_viewNetwork setHidden:newVisibility];
+}
+
+
+- (IBAction)btnClose:(id)sender {
+    [self showNetworkStatus:@"" newVisibility:YES];
 }
 
 

@@ -14,7 +14,7 @@
 @property (nonatomic,strong) NSString* username;
 @property (nonatomic,strong) NSString* userFirstName;
 @property (nonatomic,strong) NSString* userLastName;
-@property (nonatomic,strong) NSString* userRole;
+@property (nonatomic,assign) NSInteger userRole;
 @property (nonatomic,strong) NSString* userEmail;
 @property (nonatomic,strong) NSString* userPassword;
 @property (nonatomic,strong) NSString* userFBID;
@@ -26,6 +26,7 @@
 @property (nonatomic,strong) NSString* adminEmailId;
 @property (nonatomic,strong) NSString* homeRoomId;
 @property (nonatomic,strong) NSString* homeRoomName;
+@property (nonatomic,strong) NSNumber* isFollowUpAllowed;
 
 @property (nonatomic,strong) NSString* userImage;
 @property (nonatomic,strong) NSData* userImageData;

@@ -9,7 +9,7 @@
 #import <UIKit/UIKit.h>
 #import <FacebookSDK/FacebookSDK.h>
 
-@interface UpdateProfileViewController : UIViewController<UIPickerViewDataSource, UIPickerViewDelegate>
+@interface UpdateProfileViewController : UIViewController<UIPickerViewDataSource, UIPickerViewDelegate,UIActionSheetDelegate>
 
 @property (strong, nonatomic) IBOutlet UIImageView *imgProfile;
 @property (weak, nonatomic) IBOutlet FBLoginView *btnFacebook;
@@ -32,4 +32,8 @@
 - (IBAction)mBtnCancelPicker:(id)sender ;
 - (IBAction)btnLogoutClick:(id)sender;
 - (IBAction)mBtnDonePicker:(id)sender ;
+@property (strong, nonatomic) IBOutlet UIView *viewNetwork;
+- (IBAction)btnClose:(id)sender;
+@property (strong, nonatomic) IBOutlet UILabel *lblStatus;
+
 @end

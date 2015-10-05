@@ -125,6 +125,16 @@
     
     return date;
 }
+// trim the string
++(NSString *)getMonthTimed:(NSString*)monthName
+{
+    
+    if(monthName.length>3)
+    {
+        return  [monthName substringToIndex:4];;
+    }
+    return monthName;
+}
 //Manage Read And Write File
 +(NSMutableArray *)readFileData:(NSString *)strPath
 {
@@ -221,14 +231,28 @@
             NSArray *arr = NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, YES);
             filePath =  [NSString stringWithFormat:@"%@/%@.txt",[arr objectAtIndex:0],[self getDropdownFileName:dropdownName] ];
         }break;
+        case  TEACHER_DATA:{
+            
+            NSArray *arr = NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, YES);
+            filePath =  [NSString stringWithFormat:@"%@/%@.txt",[arr objectAtIndex:0],[self getDropdownFileName:dropdownName] ];
+        }break;
+
         case CLASS_DATA:
         case ROOM_DATA:
         case  COURSE_DATA:
+       
         case TITLE_DATA:
         {
             filePath =  [[NSBundle mainBundle] pathForResource:[self getDropdownFileName:dropdownName] ofType:@"txt"];
 //            NSArray *arr = NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, YES);
 //            filePath =  [NSString stringWithFormat:@"%@/%@.txt",[arr objectAtIndex:0],[self getDropdownFileName:dropdownName] ];
+            
+        }break;
+        case REVIEW_STATUS_DATA:
+        {
+            filePath =  [[NSBundle mainBundle] pathForResource:[self getDropdownFileName:dropdownName] ofType:@"txt"];
+            //            NSArray *arr = NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, YES);
+            //            filePath =  [NSString stringWithFormat:@"%@/%@.txt",[arr objectAtIndex:0],[self getDropdownFileName:dropdownName] ];
             
         }break;
         default:
@@ -269,9 +293,15 @@
         case TITLE_DATA:
             fileName = @"titleList";
             break;
+        case TEACHER_DATA:
+            fileName = @"teacherMaster";
+            break;
             
         case COURSE_DATA:
             fileName = @"CourseList";
+            break;
+        case REVIEW_STATUS_DATA:
+            fileName = @"ReviewStatus";
             break;
         
 
@@ -476,13 +506,13 @@
     NSPredicate *urlTest = [NSPredicate predicateWithFormat:@"SELF MATCHES %@", urlRegEx];
     return [urlTest evaluateWithObject:stringURL];
 }
-+(CGSize)getTheExpectedSizeOfLabel:(NSString*) labelstring
++(CGSize)getTheExpectedSizeOfLabel:(NSString*) labelstring andFontSize:(int) fontsize labelWidth:(float )width
 {
     //Calculate the expected size based on the font and linebreak mode of your label
-    CGSize maximumLabelSize = CGSizeMake(296,9999);
+    CGSize maximumLabelSize = CGSizeMake(width,9999);
 
-    CGSize expectedLabelSize = [labelstring sizeWithFont:[UIFont fontWithName:@"HelveticaNeue" size:13] constrainedToSize:maximumLabelSize
-                                           lineBreakMode:NSLineBreakByCharWrapping];
+    CGSize expectedLabelSize = [labelstring sizeWithFont:[UIFont fontWithName:@"HelveticaNeue" size:fontsize] constrainedToSize:maximumLabelSize
+                                           lineBreakMode:NSLineBreakByTruncatingTail];
    // CGSize size = [labelstring sizeWithAttributes:@{NSFontAttributeName:[UIFont fontWithName:@"HelveticaNeue" size:12]}];
     
     // Values are fractional -- you should take the ceilf to get equivalent values
@@ -491,6 +521,23 @@
     //CGRect newFrame = yourLabel.frame;
    // newFrame.size.height = expectedLabelSize.height;
    // yourLabel.frame = newFrame;
+    return expectedLabelSize;
+}
++(CGSize)getTheExpectedSizeOfLabel:(NSString*) labelstring
+{
+    //Calculate the expected size based on the font and linebreak mode of your label
+    CGSize maximumLabelSize = CGSizeMake(296,9999);
+    
+    CGSize expectedLabelSize = [labelstring sizeWithFont:[UIFont fontWithName:@"HelveticaNeue" size:13] constrainedToSize:maximumLabelSize
+                                           lineBreakMode:NSLineBreakByCharWrapping];
+    // CGSize size = [labelstring sizeWithAttributes:@{NSFontAttributeName:[UIFont fontWithName:@"HelveticaNeue" size:12]}];
+    
+    // Values are fractional -- you should take the ceilf to get equivalent values
+    //   CGSize adjustedSize = CGSizeMake(ceilf(281.0f), ceilf(size.height));
+    //adjust the label the the new height.
+    //CGRect newFrame = yourLabel.frame;
+    // newFrame.size.height = expectedLabelSize.height;
+    // yourLabel.frame = newFrame;
     return expectedLabelSize;
 }
 +(NSString*) timeLeftSinceDate: (NSDate *)dateT
@@ -507,7 +554,7 @@
     // or specifc Timezone: with name
     NSDateFormatter *format = [[NSDateFormatter alloc]init];
     [format setDateFormat:key_Custom_DateFormate];
-    NSTimeZone* localTimeZone = [NSTimeZone localTimeZone];
+    //NSTimeZone* localTimeZone = [NSTimeZone localTimeZone];
      NSTimeZone *timeZone = [NSTimeZone timeZoneWithName:@"UTC"];
    format.timeZone=timeZone;
     NSDate *date=[format dateFromString:localDateString];
@@ -542,5 +589,114 @@
         timeLeft=@"0 sec";
     return timeLeft;
 }
+// this method is used to get the server's url from settings bundle
++ (NSString*)getServerURL
+{
+    
+    NSString *bPath = [[NSBundle mainBundle] bundlePath];
+    NSString *settingsBundlePath = [bPath stringByAppendingPathComponent:@"Settings.bundle"];
+    NSString *finalPath = [settingsBundlePath stringByAppendingPathComponent:@"Root.plist"];
+    NSDictionary *settingsDict = [NSDictionary dictionaryWithContentsOfFile:finalPath];
+    NSArray *prefSpecifierArray = [settingsDict objectForKey:@"PreferenceSpecifiers"];
+    
+    NSString*  firstValueDefault = nil;
+    NSDictionary *prefItem;
+    for (prefItem in prefSpecifierArray)
+    {
+        NSString *keyValueStr = [prefItem objectForKey:@"Key"];
+        id defaultValue       = [prefItem objectForKey:@"DefaultValue"];
+        
+        if ([keyValueStr isEqualToString:@"url_preference"]){
+            firstValueDefault = defaultValue;
+        }
+    }
+    
+    NSDictionary *appDefaults = [NSDictionary dictionaryWithObjectsAndKeys:firstValueDefault,@"url_preference",nil];
+    
+    [[NSUserDefaults standardUserDefaults] registerDefaults:appDefaults];
+    [[NSUserDefaults standardUserDefaults] synchronize];
+    NSString *settingsUrl = [[NSUserDefaults standardUserDefaults] valueForKey:@"url_preference"];
+    
+    if(settingsUrl == nil){
+        settingsUrl = kProdURL;
+    }
+    
+    NSString *serverURL = kGROWTHURL(settingsUrl);
+    
+    return serverURL ;
+}
+// this method removes unwanted white spaces from a string
++ (NSString*)removeUnwantedspaces:(NSString*)oldString
+{
+    NSString* newString = oldString;
+    
+    NSCharacterSet* whitespaces = [NSCharacterSet whitespaceCharacterSet];
+    NSPredicate* noEmptyStrings = [NSPredicate predicateWithFormat:@"SELF != ''"];
+    
+    NSArray* parts = [newString componentsSeparatedByCharactersInSet:whitespaces];
+    NSArray* filteredArray = [parts filteredArrayUsingPredicate:noEmptyStrings];
+    newString = [filteredArray componentsJoinedByString:@" "];
+    
+    return newString;
+}
+
++(void)setImageAvailableAtLocal:(NSString*)imgName AndImageData:(NSData*)arrayData
+{
+
+    NSArray *titleWords = [imgName componentsSeparatedByString:@"/"];
+    imgName=[titleWords objectAtIndex:[titleWords count]-1];
+    NSArray *arr = NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, YES);
+    NSString *filePath =  [NSString stringWithFormat:@"%@/%@",[arr objectAtIndex:0], imgName];
+    
+    
+    
+//    NSData  *data=[NSJSONSerialization dataWithJSONObject:arrayData options:0 error:nil];
+    NSOutputStream *stream = [[NSOutputStream alloc] initToFileAtPath:filePath append:NO];
+    [stream open];
+    [stream write:arrayData.bytes maxLength:arrayData.length];
+    [stream close];
+    stream = nil;
+}
+
++(NSData*)getImageAvailableAtLocal:(NSString*)imgName
+{
+    NSArray *titleWords = [imgName componentsSeparatedByString:@"/"];
+    imgName=[titleWords objectAtIndex:[titleWords count]-1];
+
+    
+    NSArray *arr = NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, YES);
+    NSString  *filePath =  [NSString stringWithFormat:@"%@/%@",[arr objectAtIndex:0 ],imgName];
+    NSData *fileData = [NSData dataWithContentsOfFile:filePath];
+    return fileData;
+}
+
++(BOOL)checkImageAvailableAtLocal:(NSString*)imgName
+{
+    NSArray *titleWords = [imgName componentsSeparatedByString:@"/"];
+   
+    
+    imgName=[titleWords objectAtIndex:[titleWords count]-1];
+
+    NSArray *arr = NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, YES);
+    NSString  *filePath =  [NSString stringWithFormat:@"%@/%@",[arr objectAtIndex:0 ],imgName];
+    NSData *fileData = [NSData dataWithContentsOfFile:filePath];
+    if(fileData.length<=0)
+    {
+        return NO;
+    }
+    BOOL isDirectory;
+     BOOL fileExistsAtPath = [[NSFileManager defaultManager] fileExistsAtPath:filePath isDirectory:&isDirectory];
+    if(fileExistsAtPath){
+         return YES;
+    
+
+    }
+
+    
+    return NO;
+}
+
+
+
 @end
 

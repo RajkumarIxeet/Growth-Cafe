@@ -24,6 +24,8 @@
 - (IBAction)btnBackClick:(id)sender;
 @property (strong, nonatomic) IBOutlet UIButton *btnBack;
 
+- (IBAction)btnFilerClick:(id)sender;
+@property (strong, nonatomic) IBOutlet UIButton *btnFiler;
 - (IBAction)btnMenuClick:(id)sender;
 
 //- (IBAction)btnAssignmentClick:(id)sender;
@@ -31,5 +33,8 @@
 //- (IBAction)btnNotificationClick:(id)sender;
 //- (IBAction)btnUpdateClick:(id)sender;
 //- (IBAction)btnMoreClick:(id)sender;
-
+@property (strong, nonatomic) IBOutlet UIView *viewNetwork;
+- (IBAction)btnClose:(id)sender;
+@property (strong, nonatomic) IBOutlet UILabel *lblStatus;
+@property (strong, nonatomic) IBOutlet UIView *viewFilter;
 @end

@@ -14,6 +14,7 @@
 #import "Resourse.h"
 #import "Comments.h"
 #import "Assignment.h"
+#import "Update.h"
 #import <AssetsLibrary/AssetsLibrary.h>
 @protocol ApppEngineDelegate <NSObject>
 
@@ -23,12 +24,18 @@
 @interface AppEngine : NSObject
 //User Login with credentials (user id and password)
 -(void)loginWithUserName:(NSString*)userName password:(NSString*)password rememberMe:(BOOL)rememberMe success:(void (^)(UserDetails *userDetail))success  failure:(void (^)(NSError *error))failure;
+-(void)registerTheDeviceToken:(NSString*)deviceToken deviceType:(NSString *)deviceType success:(void (^)(BOOL logoutValue))success  failure:(void (^)(NSError *error))failure;
 #pragma mark - logout
 
 //User Logout
 -(void)logout:(void (^)(BOOL logoutValue))success  failure:(void (^)(NSError *error))failure;
 //User Register
 -(void)registerWithUserDetail:(UserDetails*)user success:(void (^)(UserDetails *userDetail))success  failure:(void (^)(NSError *error))failure;
+//Update user Profile
+-(void)updateUserDetail:(UserDetails*)user success:(void (^)(UserDetails *userDetail))success  failure:(void (^)(NSError *error))failure;
+//Update user Profile Image
+-(void)updateUserImage:(UIImage*)image success:(void (^)(BOOL successValue))success  failure:(void (^)(NSError *error))failure;
+
 -(void)ForgetPasswordWithUserName:(NSString*)userName success:(void (^)(BOOL logoutValue))success  failure:(void (^)(NSError *error))failure;
 
 //FB Varification by Server
@@ -37,7 +44,8 @@
 -(void)SetFBloginWithUserID:(NSString*)username FBID:(NSString*)fbid success:(void (^)(bool status))success  failure:(void (^)(NSError *error))failure;
 //get Master Data
 -(void)getMasterData:(void (^)(BOOL success))success  failure:(void (^)(NSError *error))failure;
-
+//get Master Data for teacher
+-(void)getMasterDataForTeacher:(void (^)(BOOL success))success  failure:(void (^)(NSError *error))failure;
 #pragma Courses Functions
 //get my Course Data
 -(void)getMyCourse:(NSString*)userid  AndTextSearch:(NSString*)txtSearch success:(void (^)(NSMutableArray *courses))success  failure:(void (^)(NSError *error))failure;
@@ -48,7 +56,15 @@
 
 
 #pragma Comment and Like on Update
--(void)getUpdates:(NSString*)userid  AndTextSearch:(NSString*)txtSearch success:(void (^)(NSMutableArray *updates))success   failure:(void (^)(NSError *error))failure;
+-(void)getUpdates:(NSString*)userid  AndTextSearch:(NSString*)txtSearch Offset:(int)offset NoOfRecords:(int)noOfRecords success:(void (^)(NSMutableDictionary *updates))success   failure:(void (^)(NSError *error))failure;
+//get Updates detail
+-(void)getUpdatesDetail:(NSString*)updateId success:(void (^)(Update *updates))success   failure:(void (^)(NSError *error))failure;
+//get Notification Data
+-(void)getNotification:(NSString*)userid  AndTextSearch:(NSString*)txtSearch Offset:(int)offset NoOfRecords:(int)noOfRecords success:(void (^)(NSMutableDictionary *updates))success   failure:(void (^)(NSError *error))failure;
+-(void)setUpdatesStatus:(NSString*)updateId success:(void (^)(BOOL logoutValue))success failure:(void (^)(NSError *error))failure;
+//get more comments
+-(void)getMoreComment:(NSString*)updateId  Offset:(int)offset NoOfRecords:(int)noOfRecords success:(void (^)( NSMutableDictionary *comments))success   failure:(void (^)(NSError *error))failure;
+    
 //Comment and Like on Resource
 -(void)setCommentOnUpdate:(NSString*)updateId  AndCommentText:(NSString*)txtComment success:(void (^)(BOOL logoutValue))success   failure:(void (^)(NSError *error))failure;
 -(void)setLikeOnUpdate:(NSString*)updateId  success:(void (^)(BOOL logoutValue))success   failure:(void (^)(NSError *error))failure;
@@ -74,10 +90,30 @@
 //get my Assignment Data
 -(void)getMyAssignments:(NSString*)userid  AndTextSearch:(NSString*)txtSearch success:(void (^)(NSMutableArray *assignments))success   failure:(void (^)(NSError *error))failure;
 
+-(void)getTeacherAssignment:(NSString*)userid  AndTextSearch:(NSString*)txtSearch AndFilterDic:(NSMutableDictionary*)filterDic success:(void (^)(NSMutableArray *assignments))success   failure:(void (^)(NSError *error))failure;
+
+//set Assignment rating
+-(void)setAssignmentRating:(NSDictionary*)selectedParamValue AndParam:(NSArray*)selectedParam AndAssignmentResourceTxnId:(NSString*)assignmentResourceTxnId success:(void (^)(BOOL logoutValue))success   failure:(void (^)(NSError *error))failure;
 
 ////upload assignment
 -(void)uploadAssignment:(NSString*)videoTitle  AndVideoDesc:(NSString*)videoDesc AndVideoURL:(NSString*)videoURL AndVideoPath:(ALAsset*)videoPath andFileName:(NSString*)fileName AndAssignment:(NSString*)assignmentId success:(void (^)(BOOL logoutValue)) success  failure:(void (^)(NSError *error))failure;
 
+-(void)saveTeacherMasterData;
+-(void)getCourse:(NSString*)userid AndFilter:(NSMutableDictionary*)dicfilter success:(void (^)(NSMutableArray *courses))success   failure:(void (^)(NSError *error))failure;
 
 
+
+//getMySetting
+-(void)getMySetting:(NSString*)userid  success:(void (^)(NSDictionary *setting))success   failure:(void (^)(NSError *error))failure;
+
+
+//setMySetting
+-(void)setMySetting:(NSString*)userid AndSettingId:(NSString*)settingId success:(void (^)(BOOL successValue))success   failure:(void (^)(NSError *error))failure;
+
+//getUserFollowList
+-(void)getUserFollowList:(NSString*)userid  success:(void (^)(NSMutableArray *courses))success   failure:(void (^)(NSError *error))failure;
+
+
+//setUnFollowUserList
+-(void)setUnFollowUserList:(NSString*)userid AndUserList:(NSMutableArray*)userList success:(void (^)(BOOL successValue))success   failure:(void (^)(NSError *error))failure;
 @end

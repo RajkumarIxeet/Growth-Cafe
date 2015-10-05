@@ -11,6 +11,7 @@
 #import "UserDetail.h"
 #import "LoginViewController.h"
 #import <QuartzCore/QuartzCore.h>
+#import "AFHTTPRequestOperationManager.h"
 @interface RegisterationViewController () <CustomKeyboardDelegate>
 {
     //keyboard
@@ -26,6 +27,7 @@
     NSString *selectedSchoolName,*selectedClassName,*selectedRoomName;
     NSString *selectedTitle;
     BOOL isFirstLoginDone;
+    AFNetworkReachabilityStatus previousStatus;
 }
 
 @end
@@ -41,6 +43,7 @@
     //    btnSchool.layer.borderWidth=2.0f;
     // Do any additional setup after loading the view from its nib.
     //init the keyboard
+      previousStatus=[AFNetworkReachabilityManager sharedManager].networkReachabilityStatus;
     if([AppSingleton sharedInstance].isUserLoggedIn==YES)
     {
         [self.tabBarController.tabBar setHidden:NO];
@@ -66,12 +69,34 @@
     //   [ btnTitle  setTitle: forState:UIControlStateNormal];
     
     // set
+  
+
 }
 -(void)viewWillAppear:(BOOL)animated
 {
+     [super viewWillAppear:animated ];
     btnFacebook.delegate=self;
+    [[AFNetworkReachabilityManager sharedManager] setReachabilityStatusChangeBlock:^(AFNetworkReachabilityStatus status) {
+        NSLog(@"Reachability: %@", AFStringFromNetworkReachabilityStatus(status));
+        if(status==AFNetworkReachabilityStatusNotReachable)
+        {   previousStatus=status;
+            [self showNetworkStatus:NO_INTERNET_MSG newVisibility:NO] ;
+        }else{
+            previousStatus=status;
+            [self showNetworkStatus:REESTABLISH_INTERNET_MSG newVisibility:YES];
+            
+        }
+        //       else  if(status!=AFNetworkReachabilityStatusNotReachable)
+        //       {
+        //           previousStatus=status;
+        //           [self showNetworkStatus:@""];
+        //
+        //       }
+    }];
+ [[AFNetworkReachabilityManager sharedManager] startMonitoring];
 }
 -(void)viewWillDisappear:(BOOL)animated{
+    [super viewWillDisappear:animated ];
     btnFacebook.delegate=nil;
 }
 
@@ -96,6 +121,13 @@
 
 
 - (IBAction)btnSubmitClick:(id)sender {
+    //Show Indicator
+    if(previousStatus==AFNetworkReachabilityStatusNotReachable)
+    {
+        [self showNetworkStatus:NO_INTERNET_MSG newVisibility:NO] ;        
+        return;
+    }
+
     UserDetails *usrDetail= [[UserDetails alloc]init];
     
     usrDetail.userEmail=[[txtEmail text] stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceAndNewlineCharacterSet]];
@@ -198,8 +230,22 @@
     [AppGlobal showAlertWithMessage:[[error userInfo] objectForKey:NSLocalizedDescriptionKey] title:@""];
 }
 - (IBAction)btnTitleClick:(id)sender {
+    mIntRow=0;
     selectedPicker=TITLE_DATA;
+ 
     arrayAllData=[AppGlobal getDropdownList:TITLE_DATA];
+    if(selectedTitle!=nil)
+    {
+        for (NSDictionary *dic in arrayAllData) {
+            if([[dic objectForKey:@"Title"] isEqualToString:selectedTitle] )
+            {
+                mIntRow =[arrayAllData indexOfObject:dic] ;
+                break;
+            }
+        }
+        
+    }
+    [mDataPickerView selectRow:mIntRow inComponent:0 animated:YES];
     [mDataPickerView reloadAllComponents];
     [AppGlobal ShowHidePickeratWindow:mViewAccountTypePicker fromWindow:self.view withVisibility:YES];
     [self allTxtFieldsResignFirstResponder];
@@ -213,8 +259,18 @@
 
 - (IBAction)btnSchoolClick:(id)sender {
     selectedPicker=SCHOOL_DATA;
-    
-    
+    mIntRow=0;
+    if(selectedSchoolId!=nil)
+    {
+        for (NSDictionary *dic in arraySchools) {
+            if([[dic objectForKey:@"schoolName"] isEqualToString:selectedSchoolName] )
+            {
+                 mIntRow =[arraySchools indexOfObject:dic] ;
+            }
+        }
+       
+    }
+    [mDataPickerView selectRow:mIntRow inComponent:0 animated:YES];
     [mDataPickerView reloadAllComponents];
     [AppGlobal ShowHidePickeratWindow:mViewAccountTypePicker fromWindow:self.view withVisibility:YES];
     [self allTxtFieldsResignFirstResponder];
@@ -238,10 +294,21 @@
 - (IBAction)btnClassClick:(id)sender {
     selectedPicker=CLASS_DATA;
     //   arrayAllData=[AppGlobal getDropdownList:CLASS_DATA];
+    mIntRow=0;
     
     if (arrayClass!=nil &&[arrayClass count]>0)
         
     {
+        if(selectedClassId!=nil)
+        {
+            for (NSDictionary *dic in arrayClass) {
+                if([[dic objectForKey:@"className"] isEqualToString:selectedClassName] )
+                {
+                    mIntRow =[arrayClass indexOfObject:dic] ;
+                }
+            }
+            
+        }
         [mDataPickerView reloadAllComponents];
         [AppGlobal ShowHidePickeratWindow:mViewAccountTypePicker fromWindow:self.view withVisibility:YES];
         [self allTxtFieldsResignFirstResponder];
@@ -264,8 +331,19 @@
 }
 - (IBAction)btnHomeClick:(id)sender {
     selectedPicker=ROOM_DATA;
+    mIntRow=0;
     //  arrayAllData=[AppGlobal getDropdownList:ROOM_DATA];
     if (arrayHome!=nil &&[arrayHome count]>0){
+        if(selectedRoomId!=nil)
+        {
+            for (NSDictionary *dic in arrayHome) {
+                if([[dic objectForKey:@"homeRoomName"] isEqualToString:selectedRoomName] )
+                {
+                    mIntRow =[arrayHome indexOfObject:dic] ;
+                }
+            }
+            
+        }
         [mDataPickerView reloadAllComponents];
         [AppGlobal ShowHidePickeratWindow:mViewAccountTypePicker fromWindow:self.view withVisibility:YES];
         [self allTxtFieldsResignFirstResponder];
@@ -368,12 +446,24 @@
 
 -(void)loginSucessFullWithFB:(NSString*)userid {
     // if FB Varification is done then navigate the main screen
-    
+    [self saveTeacherMasterData];
     [AppGlobal  setValueInDefault:userid value:key_FBUSERID];
     [self dismissViewControllerAnimated:YES completion:^{}];
     [self.tabBarController.tabBar setHidden:NO];
     [self.navigationController popToRootViewControllerAnimated:YES];
 }
+-(void)saveTeacherMasterData{
+    // user type is  teacher call its master data
+    if([AppSingleton sharedInstance].userDetail.userRole ==2)
+    {
+        [[appDelegate _engine] getMasterDataForTeacher:^(BOOL success) {
+            
+        } failure:^(NSError *error) {
+            
+        }];
+    }
+}
+
 -(void)loginViewShowingLoggedOutUser:(FBLoginView *)loginView{
     // self.lblLoginStatus.text = @"You are logged out";
     [FBSession.activeSession closeAndClearTokenInformation];
@@ -563,8 +653,21 @@
         return [arrayAllData count];
         
     }break;
+    case MODULE_DATA:
+    {
+        return [arrayAllData count];
         
-        break;
+    }break;
+    case TEACHER_DATA:
+    {
+        return [arrayAllData count];
+        
+    }break;
+    case REVIEW_STATUS_DATA:
+    {
+        return 0;
+        
+    }break;
     default:
         [NSException raise:NSGenericException format:@"Unexpected FormatType."];
         
@@ -606,7 +709,7 @@
 {
     
     mIntRow=row;
-    [pickerView selectRow:row inComponent:component animated:NO];
+    [pickerView selectRow:mIntRow inComponent:component animated:NO];
 }
 
 - (NSString *)pickerView:(UIPickerView *)pickerView titleForRow:(NSInteger)row forComponent:(NSInteger)component{
@@ -646,7 +749,23 @@
             NSDictionary *responseDic = [ arrayAllData objectAtIndex:row];
             return [responseDic objectForKey:@"Title"];
             break;
+        } case TEACHER_DATA:
+        {
+            NSDictionary *responseDic = [ arrayAllData objectAtIndex:row];
+            return [responseDic objectForKey:@"Title"];
+            break;
         }
+        case MODULE_DATA:
+        {
+            NSDictionary *responseDic = [ arrayAllData objectAtIndex:row];
+            return [responseDic objectForKey:@"Title"];
+            break;
+        }
+        case REVIEW_STATUS_DATA:
+        {
+            return 0;
+            
+        }break;
             
         default:
             [NSException raise:NSGenericException format:@"Unexpected FormatType."];
@@ -673,7 +792,9 @@
                 selectedRoomId=nil;
                 selectedRoomName=nil;
                 [btnClass setTitle:@"Department" forState:UIControlStateNormal];
+                [btnClass setTitleColor:[UIColor colorWithRed:230/255.0 green:230/255.0 blue:230/255.0 alpha:1.0] forState:UIControlStateNormal];
                 [btnHome   setTitle:@"Group" forState:UIControlStateNormal];
+                [btnHome setTitleColor:[UIColor colorWithRed:230/255.0 green:230/255.0 blue:230/255.0 alpha:1.0] forState:UIControlStateNormal];
             }
             selectedSchoolId=  [responseDic objectForKey:@"schoolId"];
             selectedSchoolName=  [responseDic objectForKey:@"schoolName"];
@@ -693,6 +814,7 @@
                 selectedRoomId=nil;
                 selectedRoomName=nil;
                 [btnHome   setTitle:@"Group" forState:UIControlStateNormal];
+                [btnHome setTitleColor:[UIColor colorWithRed:230/255.0 green:230/255.0 blue:230/255.0 alpha:1.0] forState:UIControlStateNormal];
             }
             selectedClassId=  [responseDic objectForKey:@"classId"];
             selectedClassName=  [responseDic objectForKey:@"className"];
@@ -718,12 +840,23 @@
             selectedTitle= [responseDic objectForKey:@"Title"];
             [btnTitle setTitle:selectedTitle forState:UIControlStateNormal];
             [btnTitle setTitleColor:[UIColor colorWithRed:0/255 green:0/255 blue:0/255 alpha:1.0] forState: UIControlStateNormal ];
-            break;
+            break; 
         }
             
         default:
             [NSException raise:NSGenericException format:@"Unexpected FormatType."];
     }
+}
+- (void)showNetworkStatus:(NSString *)status newVisibility:(BOOL)newVisibility
+{
+    
+    _lblStatus.text=status;
+    [_viewNetwork setHidden:newVisibility];
+}
+
+
+- (IBAction)btnClose:(id)sender {
+    [self showNetworkStatus:@"" newVisibility:YES];
 }
 
 @end

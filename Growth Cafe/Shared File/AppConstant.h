@@ -9,71 +9,110 @@
 #ifndef Growth_Cafe_AppConstant_h
 #define Growth_Cafe_AppConstant_h
 
-#define  APP_URL  @"http://191.239.57.54:8080/"
-
+//#define  APP_URL  @"http://191.239.57.54:8080/SLMS"
+//#define  APP_URL  @"http://191.239.57.54:8080/SLMS_test"
 //#define  APP_URL  @"http://192.168.0.21:8080/"
+#define APP_URL [AppGlobal getServerURL]
 
-#define MASTER_DATA_URL APP_URL@"SLMS/rest/common/getMasterData"
-#define USER_REGISTER_URL APP_URL@"SLMS/rest/user/register"
-#define USER_LOGIN_URL APP_URL@"SLMS/rest/user/login"
-#define USER_LOGUT_URL APP_URL@"SLMS/rest/user/logout"
-#define USER_FORGETPASSWORD_URL(username) [NSString stringWithFormat:APP_URL@"SLMS/rest/user/forgetPwd/userId/%@",username]
 
-#define USER_REGISTER_URL APP_URL@"SLMS/rest/user/register"
-#define USER_SET_FB_URL(userName,fbId) [NSString stringWithFormat:APP_URL@"SLMS/rest/user/setFBId/userName/%@/userFbId/%@",userName,fbId]
-#define USER_VALIDATE_FB_URL(fbId) [NSString stringWithFormat:APP_URL@"SLMS/rest/user/getByFBId/userFbId/%@",fbId]
+#define kProdURL [NSString stringWithFormat:@"191.239.57.54:8081/SLMS"]
+#define kGROWTHURL(url) [NSString stringWithFormat:@"http://%@" ,url]
 
-#define USER_COURSE_URL APP_URL@"SLMS/rest/course/getCourses"
-#define USER_MODULE_DETAIL_URL APP_URL@"SLMS/rest/course/getModuleDetail"
+#define MASTER_DATA_URL [NSString stringWithFormat:@"%@/rest/common/getMasterData", APP_URL]
+#define MASTER_DATA_FOR_TEACHER_URL(teacherid) [NSString stringWithFormat:@"%@/rest/common/getMasterData/teacherId/%@",APP_URL ,teacherid]
+
+
+#define USER_REGISTER_URL [NSString stringWithFormat:@"%@/rest/user/register", APP_URL]
+#define USER_LOGIN_URL [NSString stringWithFormat:@"%@/rest/user/login",APP_URL]
+#define USER_LOGUT_URL [NSString stringWithFormat:@"%@/rest/user/logout",APP_URL]
+#define USER_FORGETPASSWORD_URL(username) [NSString stringWithFormat:@"%@/rest/user/forgetPwd/userId/%@",APP_URL,username]
+#define REGISTER_DEVICE [NSString stringWithFormat:@"%@/rest/notification/registerDevice",APP_URL]
+#define UPDATE_VIEW_STATUS(userId,feedId) [NSString stringWithFormat:@"%@/rest/common/updateNotificationStatus/userId/%@/feedId/%@/status/1",APP_URL,userId,feedId]
+
+
+//#define USER_REGISTER_URL [NSString stringWithFormat:@"%@/rest/user/register",APP_URL];
+#define USER_UPDATE_PROFILE_URL [NSString stringWithFormat:@"%@/rest/user/updateProfile",APP_URL]
+#define POST_USER_PROFILE_IMG_URL [NSString stringWithFormat:@"%@/rest/user/uploadProfileImage",APP_URL]
+
+#define USER_SET_FB_URL(userName,fbId) [NSString stringWithFormat:@"%@/rest/user/setFBId/userName/%@/userFbId/%@",APP_URL,userName,fbId]
+#define USER_VALIDATE_FB_URL(fbId) [NSString stringWithFormat:@"%@/rest/user/getByFBId/userFbId/%@",APP_URL,fbId]
+
+#define USER_COURSE_URL [NSString stringWithFormat:@"%@/rest/course/getCourses",APP_URL]
+#define TEACHER_COURSE_URL [NSString stringWithFormat:@"%@/rest/course/getCourses/teacher",APP_URL]
+#define USER_MODULE_DETAIL_URL [NSString stringWithFormat:@"%@/rest/course/getModuleDetail",APP_URL]
 //Key For UserDefault
 //Comment and like URL
-#define CMT_ON_RESOURCE_URL APP_URL@"SLMS/rest/course/commentOnResourse"
-#define LIKE_ON_RESOURCE_URL(username,resourceid) [NSString stringWithFormat:APP_URL@"SLMS/rest/course/likeOnResource/userName/%@/resourceId/%@",username,resourceid]
+#define CMT_ON_RESOURCE_URL [NSString stringWithFormat:@"%@/rest/course/commentOnResourse",APP_URL]
+#define LIKE_ON_RESOURCE_URL(username,resourceid) [NSString stringWithFormat:@"/rest/course/likeOnResource/userName/%@/resourceId/%@",APP_URL,username,resourceid]
 
-#define CMT_ON_CMT_URL APP_URL@"SLMS/rest/course/commentOnComment"
+#define CMT_ON_CMT_URL [NSString stringWithFormat:@"%@/rest/course/commentOnComment",APP_URL]
 
-#define LIKE_ON_CMT_URL(useremail,commentId) [NSString stringWithFormat:APP_URL@"SLMS/rest/course/likeOnComment/userName/%@/commentId/%@",useremail,commentId]
+#define LIKE_ON_CMT_URL(useremail,commentId) [NSString stringWithFormat:@"%@/rest/course/likeOnComment/userName/%@/commentId/%@",APP_URL,useremail,commentId]
+
+
+//get more comment
+#define GET_MORE_COMMENT_URL [NSString stringWithFormat:@"%@/rest/common/getFeedComments",APP_URL]
 
 //get Feed  List
-#define GET_UPDATE_URL APP_URL@"SLMS/rest/common/getFeeds"
+#define GET_UPDATE_DETAIL_URL(userid,feedid) [NSString stringWithFormat:@"%@/rest/common/getFeedDetail/userId/%@/feedId/%@",APP_URL,userid,feedid]
+
+//get Feed  List
+#define GET_UPDATE_URL [NSString stringWithFormat:@"%@/rest/common/getFeeds",APP_URL]
+#define GET_NOTIFICATION_URL [NSString stringWithFormat:@"%@/rest/common/getNotifications",APP_URL]
+
+//setting services
+//http://191.239.57.54:8081/SLMS/rest/user/getFeedUsers/userId/22
+#define GET_FEED_USERS(userid) [NSString stringWithFormat:@"%@/rest/user/getFeedUsers/userId/%@",APP_URL,userid]
+#define GET_FEED_ACCESSTYPE(userid) [NSString stringWithFormat:@"%@/rest/user/getFeedAccessType/userId/%@",APP_URL,userid]
+#define SET_FEED_ACCESSTYPE(userid,accesstypeid) [NSString stringWithFormat:@"%@/rest/user/setFeedAccessType/userId/%@/accessTypeId/%@",APP_URL,userid,accesstypeid]
+
 //comment on feed
-//SLMS/rest/common/commentOnFeed
-//http://localhost:8080/SLMS/rest/common/commentOnFeed
-#define CMT_ON_FEED_URL APP_URL@"SLMS/rest/common/commentOnFeed"
+///rest/common/commentOnFeed
+//http://localhost:8080//rest/common/commentOnFeed
+#define CMT_ON_FEED_URL  [NSString stringWithFormat:@"%@/rest/common/commentOnFeed",APP_URL]
 //comment on comment for feed
-//SLMS/rest/common/commentOnComment
-//	http://localhost:8080/SLMS/rest/common/commentOnComment
-#define CMT_ON_CMT_FEED_URL APP_URL@"SLMS/rest/common/commentOnComment"
+///rest/common/commentOnComment
+//	http://localhost:8080//rest/common/commentOnComment
+#define CMT_ON_CMT_FEED_URL [NSString stringWithFormat:@"%@/rest/common/commentOnComment",APP_URL]
 //Like on feed
 ///rest/common/likeOnFeed/userName/{userName}/feedId/{feedId}
-//http://localhost:8080/SLMS/rest/common/likeOnFeed/userName/mayankd4@ixeet.com/feedId/1
-#define LIKE_ON_FEED_URL(useremail,feedId) [NSString stringWithFormat:APP_URL@"SLMS/rest/common/likeOnFeed/userName/%@/feedId/%@",useremail,feedId]
+//http://localhost:8080//rest/common/likeOnFeed/userName/mayankd4@ixeet.com/feedId/1
+#define LIKE_ON_FEED_URL(useremail,feedId) [NSString stringWithFormat:@"%@/rest/common/likeOnFeed/userName/%@/feedId/%@",APP_URL,useremail,feedId]
 //Like on comment for feed
 //rest/common/likeOnComment/userName/{userName}/commentId/{commentId}
-#define LIKE_ON_CMT_FEED_URL(useremail,commentId) [NSString stringWithFormat:APP_URL@"SLMS/rest/common/likeOnComment/userName/%@/commentId/%@",useremail,commentId]
+#define LIKE_ON_CMT_FEED_URL(useremail,commentId) [NSString stringWithFormat:@"%@/rest/common/likeOnComment/userName/%@/commentId/%@",APP_URL,useremail,commentId]
 // get course detail for feed
 //rest/course/getCourse/feedId/{feedId}
-#define COURSE_DETAIL_URL(feedId) [NSString stringWithFormat:APP_URL@"SLMS/rest/course/getCourse/feedId/%@",feedId]
+#define COURSE_DETAIL_URL(feedId) [NSString stringWithFormat:@"%@/rest/course/getCourse/feedId/%@",APP_URL,feedId]
 // get module detail for feed
 //rest/course/getModule/feedId/{feedId}
-#define MODULE_DETAIL_URL(feedId) [NSString stringWithFormat:APP_URL@"SLMS/rest/course/getModule/feedId/%@",feedId]
+#define MODULE_DETAIL_URL(feedId) [NSString stringWithFormat:@"%@/rest/course/getModule/feedId/%@",APP_URL,feedId]
 
 
 // get getUserDetails for feed
 //rest/common/getUser/id/{userId}
-#define USER_DETAIL_URL(userId) [NSString stringWithFormat:APP_URL@"SLMS/rest/common/getUser/id/%@",userId]
-
+#define USER_DETAIL_URL(userId) [NSString stringWithFormat:@"%@/rest/common/getUser/id/%@",APP_URL,userId]
 
 
 
 //Assignment url
-//http://192.168.0.14:8080/SLMS/rest/course/getAssignments
-#define GET_ASSIGNMENT_URL APP_URL@"SLMS/rest/course/getAssignments"
-#define POST_ASSIGNMENT_URL APP_URL@"SLMS/rest/course/uploadResourceDetail"
+//http://192.168.0.14:8080//rest/course/getAssignments
+#define GET_TEACHER_ASSIGNMENT_URL [NSString stringWithFormat:@"%@/rest/course/getTeacherAssignments", APP_URL]
+#define GET_ASSIGNMENT_URL [NSString stringWithFormat:@"%@/rest/course/getAssignments", APP_URL]
+
+#define POST_ASSIGNMENT_URL [NSString stringWithFormat:@"%@/rest/course/uploadResourceDetail", APP_URL]
+#define SET_ASSIGNMENT_RATING_URL [NSString stringWithFormat:@"%@/rest/course/rateAssignment", APP_URL]
+
+#define SET_USER_FOLLOW_STATUS_URL [NSString stringWithFormat:@"%@/rest/user/updateFollowersStatus", APP_URL]
+
+
+
 
 #define key_Custom_DateFormate @"yyyy-MM-dd HH:mm:ss.S"
 #define key_loginId @"LoginId"
 #define key_loginPassword @"LoginPassword"
+#define key_Select_Rating @"Select" 
+#define key_Select_Massage(ParamName) [NSString stringWithFormat:@"%@ is not selected", ParamName]
 //#define key_rememberMe @"rememberMe"
 //#define key_UserId @"UserId"
 //#define key_UserName @"UserName"
@@ -86,10 +125,13 @@
 //server Respond Key
 #define key_severRespond_Status @"status"
 #define key_severRespond_StatusMessage @"statusMessage"
-#define REGISTER_SUCCESS_MSG @"Thank you for registering with SLMS, your registration is pending for approval from school admin. You will be notified in email if you are approved."
+#define REGISTER_SUCCESS_MSG @"Thank you for registering with Growth Cafe, your registration is pending for approval from Organization admin. You will be notified in email if you are approved."
 #define FORGET_SUCCESS_MSG(useremail)[NSString stringWithFormat:@"Your password is sent to %@, please check SPAM folder if not received in inbox.",useremail]
 
 // Error Msg
+
+#define NO_INTERNET_MSG @"No Internet Connection."
+#define REESTABLISH_INTERNET_MSG @"Reestablishing Lost Connection."
 #define ERROR_DEFAULT_MSG @"There seems to be a problem connecting with server. Please check your network connection."
 #define MISSING_LOGIN_ID_PWD @"Email and Password can't empty, please enter a valid email and password."
 #define MISSING_LOGIN_ID @"Email can't be empty, please enter a valid email."
@@ -114,7 +156,7 @@
 #define MISSING_HOME @"Group is not selected."
 #define MISSING_ADMIN_EMAIL @" Organization email can't be empty."
 #define MISSING_COMMENT @" Comment can't be empty."
-#define MISSING_ADMIN_VLID_EMAIL @" Organization email seems to be incorrect, Enter a valid email id  including '@' and '.' "
+#define MISSING_ADMIN_VLID_EMAIL @" Organization email seems to be incorrect, enter a valid email id  including '@' and '.' "
 
 #define ORG_NOT_FILLED @"First select your Organization."
 #define DEPART_NOT_FILLED @"First select your Department. "
@@ -123,7 +165,11 @@
 
 #define SUCCESS_MESSAGE_ALERT_TITLE @"Info"
 #define DATA_LOADING_MSG @"Please wait..."
-
+#define UPDATE_PER_PAGE 3
+#define COMMENT_PER_PAGE 5
+#define DEVICE_TOKEN @"devicetoken"
+#define DEVICE_TOKEN_REGISTER @"devicetokenregister"
+#define NOTIFICATION_PER_PAGE 10
 //Dropdown Enums
 typedef NS_ENUM(NSInteger, AppDropdownType){
     
@@ -131,7 +177,10 @@ typedef NS_ENUM(NSInteger, AppDropdownType){
     CLASS_DATA,
     ROOM_DATA,
     TITLE_DATA,
-    COURSE_DATA
+    COURSE_DATA,
+    MODULE_DATA,
+    TEACHER_DATA,
+    REVIEW_STATUS_DATA
 };
 typedef enum ScrollDirection {
     ScrollDirectionNone,

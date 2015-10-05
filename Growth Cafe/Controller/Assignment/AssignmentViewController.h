@@ -21,5 +21,12 @@
 @property (strong, nonatomic) IBOutlet MPMoviePlayerController *moviePlayer;
 @property (strong, nonatomic)  CustomProfileView *objCustom;
 
+@property (strong, nonatomic) IBOutlet UIView *viewFilter;
 - (IBAction)btnProfileClick:(id)sender;
+@property (strong, nonatomic) IBOutlet UIView *viewNetwork;
+- (IBAction)btnClose:(id)sender;
+@property (strong, nonatomic) IBOutlet UILabel *lblStatus;
+- (IBAction)btnFilerClick:(id)sender;
+@property (strong, nonatomic) IBOutlet UIButton *btnFiler;
+
 @end

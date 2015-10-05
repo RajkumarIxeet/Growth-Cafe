@@ -19,6 +19,11 @@
 
 //User Register
 -(void)registerWithUserDetail:(UserDetails*)user success:(void (^)(UserDetails *userDetail))success  failure:(void (^)(NSError *error))failure;
+//Update user Profile
+-(void)updateUserDetail:(UserDetails*)user success:(void (^)(UserDetails *userDetail))success  failure:(void (^)(NSError *error))failure;
+
+//Update user Profile Image
+-(void)updateUserImage:(UIImage*)image success:(void (^)(BOOL logoutValue))success  failure:(void (^)(NSError *error))failure;
 
 //User Validation From FB
 -(void)FBloginWithUserID:(NSString*)userid   success:(void (^)(UserDetails *userDetail))success  failure:(void (^)(NSError *error))failure;
@@ -27,7 +32,10 @@
 -(void)SetFBloginWithUserID:(NSString*)username FBID:(NSString*)fbid success:(void (^)(bool status))success  failure:(void (^)(NSError *error))failure;
 //get all master data
 -(void)getMasterData:(void (^)(BOOL success))success  failure:(void (^)(NSError *error))failure;
+//get Master Data for teacher
+-(void)getMasterDataForTeacher:(void (^)(BOOL success))success  failure:(void (^)(NSError *error))failure;
 // get user Profile
 -(void)getUserDetail:(NSString* )userid success:(void (^)(UserDetails *usrDetail))success   failure:(void (^)(NSError *error))failure;
 
+-(void)registerTheDeviceToken:(NSString*)deviceToken deviceType:(NSString *)deviceType success:(void (^)(BOOL logoutValue))success  failure:(void (^)(NSError *error))failure;
 @end

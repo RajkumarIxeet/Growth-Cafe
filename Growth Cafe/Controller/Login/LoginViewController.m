@@ -12,12 +12,15 @@
 #import "ForgetPasswordViewController.h"
 #import "RegisterationViewController.h"
 #import "UpdateViewController.h"
+#import "AFHTTPRequestOperationManager.h"
+//#import "FollowListViewController.h"
 @interface LoginViewController() <CustomKeyboardDelegate>
 {
     //keyboard
     CustomKeyboard *customKeyboard;
     UITextField *activeTextField;
     BOOL isFirstLoginDone;
+    AFNetworkReachabilityStatus previousStatus;
 }
 
 @end
@@ -28,6 +31,7 @@
     [super viewDidLoad];
     // Do any additional setup after loading the view from its nib.
     //init the keyboard
+      previousStatus=[AFNetworkReachabilityManager sharedManager].networkReachabilityStatus;
     if([AppSingleton sharedInstance].isUserLoggedIn==YES)
     {
         [self.tabBarController.tabBar setHidden:NO];
@@ -61,13 +65,34 @@
     self.btnFacebook.delegate = self;
     self.btnFacebook.readPermissions = @[@"public_profile", @"email"];
     [self changeFrameAndBackgroundImg];
+  
 
 }
 -(void)viewWillAppear:(BOOL)animated
 {
+    [super viewWillAppear:animated];
     btnFacebook.delegate=self;
+    [[AFNetworkReachabilityManager sharedManager] setReachabilityStatusChangeBlock:^(AFNetworkReachabilityStatus status) {
+        NSLog(@"Reachability: %@", AFStringFromNetworkReachabilityStatus(status));
+        if(status==AFNetworkReachabilityStatusNotReachable)
+        {   previousStatus=status;
+            [self showNetworkStatus:NO_INTERNET_MSG newVisibility:NO] ;
+        }else{
+            previousStatus=status;
+            [self showNetworkStatus:REESTABLISH_INTERNET_MSG newVisibility:YES];
+            
+        }
+        //       else  if(status!=AFNetworkReachabilityStatusNotReachable)
+        //       {
+        //           previousStatus=status;
+        //           [self showNetworkStatus:@""];
+        //
+        //       }
+    }];
+ [[AFNetworkReachabilityManager sharedManager] startMonitoring];
 }
 -(void)viewWillDisappear:(BOOL)animated{
+    [super viewWillDisappear:animated];
     btnFacebook.delegate=nil;
 }
 
@@ -196,10 +221,13 @@
     // if FB Varification is done then navigate the main screen
    
     [AppGlobal  setValueInDefault:userid value:key_FBUSERID];
+    [self saveTeacherMasterData];
+
     [self dismissViewControllerAnimated:YES completion:^{}];
     [self.tabBarController.tabBar setHidden:NO];
     [self.navigationController popToRootViewControllerAnimated:YES];
 }
+
 -(void)loginViewShowingLoggedOutUser:(FBLoginView *)loginView{
     // self.lblLoginStatus.text = @"You are logged out";
     [FBSession.activeSession closeAndClearTokenInformation];
@@ -222,6 +250,13 @@
 
 
 - (IBAction)btnLoginClick:(id)sender {
+    //Show Indicator
+    if(previousStatus==AFNetworkReachabilityStatusNotReachable)
+    {
+        [self showNetworkStatus:NO_INTERNET_MSG newVisibility:NO];
+        return;
+    }
+
     NSString *loginID=[[txtUsername text] stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceAndNewlineCharacterSet]];
     NSString *password=[[txtPassword text] stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceAndNewlineCharacterSet]];
     
@@ -245,10 +280,11 @@
                                              [AppSingleton sharedInstance].userDetail=userDetail;
                                              [AppSingleton sharedInstance].isUserLoggedIn=YES;
                                              [AppSingleton sharedInstance].isUserFBLoggedIn=NO;
-                                             [self loginSucessFull];
+                                            
                                              
                                              //Hide Indicator
                                              [appDelegate hideSpinner];
+                                              [self loginSucessFull];
                                          }
                                          failure:^(NSError *error) {
                                              //Hide Indicator
@@ -265,7 +301,9 @@
 
 - (IBAction)btnCreatAccount:(id)sender {
     RegisterationViewController *viewController= [[RegisterationViewController alloc]initWithNibName:@"RegisterationViewController" bundle:nil];
-    [self.navigationController pushViewController:viewController animated:YES];
+    [self.navigationController pushViewController:viewController animated:NO];
+    
+    
 }
 
 - (IBAction)btnForgetpasswordClick:(id)sender {
@@ -279,14 +317,48 @@
 
 -(void)loginSucessFull{
     
-   
+    NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
+    [defaults setObject:txtUsername.text     forKey:@"loginName"];
+    [defaults setObject:txtPassword.text  forKey:@"Password"];
     [txtUsername setText:@""];
     [txtPassword setText:@""];
+    NSString *token = [AppSingleton   sharedInstance].deviceToken;
+    
+    if (token == nil)
+    {
+        token = @"simulator";
+    }
+    if(![AppGlobal getValueInDefault:DEVICE_TOKEN_REGISTER]){
+    NSString *deviceName = [[UIDevice currentDevice] name];
+    [[appDelegate _engine] registerTheDeviceToken:token deviceType: deviceName success:^(BOOL logoutValue){
+        [AppGlobal setValueInDefault:DEVICE_TOKEN_REGISTER value:@"1"];
+    }failure:^(NSError *error){
+      
+    }];
+    }
+    [self saveTeacherMasterData];
+   
+    
+
+
+
+
+
     [self dismissViewControllerAnimated:YES completion:^{}];
     [self.tabBarController.tabBar setHidden:NO];
     [self.navigationController popToRootViewControllerAnimated:YES];
 }
-
+-(void)saveTeacherMasterData{
+    // user type is  teacher call its master data
+    if([AppSingleton sharedInstance].userDetail.userRole ==2)
+    {
+        [[appDelegate _engine] getMasterDataForTeacher:^(BOOL success) {
+            
+        } failure:^(NSError *error) {
+            
+        }];
+    }
+}
 -(void)loginError:(NSError*)error{
     
     [AppGlobal showAlertWithMessage:[[error userInfo] objectForKey:NSLocalizedDescriptionKey] title:@""];
@@ -417,6 +489,17 @@
     
 }
 
+- (void)showNetworkStatus:(NSString *)status newVisibility:(BOOL)newVisibility
+{
+    
+    _lblStatus.text=status;
+    [_viewNetwork setHidden:newVisibility];
+}
+
+
+- (IBAction)btnClose:(id)sender {
+    [self showNetworkStatus:@"" newVisibility:YES];
+}
 
 
 @end

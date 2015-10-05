@@ -5,7 +5,6 @@
 //  Created by Ixeet Software Solutions Pvt Limited on 8/12/15.
 //  Copyright (c) 2015 Scolere. All rights reserved.
 //
-
 #import "AppDelegate.h"
 #import <FacebookSDK/FacebookSDK.h>
 #import "UpdateViewController.h"
@@ -19,6 +18,8 @@
 UIView *spinnerView;
 UIActivityIndicatorView *activityIndicator;
 UILabel *activityLabel;
+UIApplication* appp;
+
 }
 @end
 
@@ -26,7 +27,7 @@ UILabel *activityLabel;
 
 
 @synthesize _engine;
-@synthesize _homeViewController,_navHomeViewController;
+
 
 - (BOOL)application:(UIApplication *)application didFinishLaunchingWithOptions:(NSDictionary *)launchOptions {
     // Override point for customization after application launch.
@@ -77,13 +78,13 @@ UILabel *activityLabel;
     
     // UIViewController *uvButton4 = [self.tabBarController.viewControllers objectAtIndex:3];
     viewController4.tabBarItem.title = @"Notifications" ;
-    [viewController4.tabBarItem setEnabled:NO];
+    //[viewController4.tabBarItem setEnabled:NO];
     viewController4.tabBarItem.image = [[UIImage imageNamed:@"icn_notification-defaultn.png"]imageWithRenderingMode:UIImageRenderingModeAlwaysOriginal];
     viewController4.tabBarItem.selectedImage = [[UIImage imageNamed:@"icn_notification-selectedn.png"]imageWithRenderingMode:UIImageRenderingModeAlwaysOriginal];
     
     // UIViewController *uvButton5 = [self.tabBarController.viewControllers objectAtIndex:4];
     viewController5.tabBarItem.title = @"More" ;
-    [viewController5.tabBarItem setEnabled:NO];
+   // [viewController5.tabBarItem setEnabled:NO];
     viewController5.tabBarItem.image = [[UIImage imageNamed:@"icn_more-defaultn.png"]imageWithRenderingMode:UIImageRenderingModeAlwaysOriginal];
     viewController5.tabBarItem.selectedImage = [[UIImage imageNamed:@"icn_more-selectedn.png"]imageWithRenderingMode:UIImageRenderingModeAlwaysOriginal];
     
@@ -109,10 +110,111 @@ UILabel *activityLabel;
     
     [FBLoginView class];
     [FBProfilePictureView class];
+    [AppSingleton sharedInstance].isKeepMeloggedIn  = [[NSUserDefaults standardUserDefaults] boolForKey:@"keep_loggedIn"];
     
+   
     
+    NSLog(@"Device Token = %@", [AppGlobal getValueInDefault:DEVICE_TOKEN]);
+
+    
+    if (![AppGlobal getValueInDefault:DEVICE_TOKEN])
+    {
+        [self registerPush];
+    }
+    else
+    {
+        NSString *token =  [AppGlobal getValueInDefault:DEVICE_TOKEN];
+        NSString *deviceToken = [[token description] stringByTrimmingCharactersInSet:[NSCharacterSet characterSetWithCharactersInString:@"<>"]];
+        deviceToken = [deviceToken stringByReplacingOccurrencesOfString:@" " withString:@""];
+        
+        [AppSingleton sharedInstance].deviceToken = deviceToken;
+        //NSLog(@"deviceToken = %@",  [NPUserData sharedNPUserData].deviceToken);
+    }
+    //appp = application;
+    //[self performSelector:@selector(pushTest) withObject:nil afterDelay:30];
     return YES;
 }
+- (void) pushTest
+{
+    //  NSLog(@"testing for push notification");
+//    NSDictionary *dic =[[NSDictionary alloc] initWithObjectsAndKeys:kPushMessage, @"alert", nil];
+//    
+//    [self application:appp didReceiveRemoteNotification:dic];
+}
+#pragma --
+#pragma Register push
+- (void)registerPush
+{
+
+    
+    if ([[UIApplication sharedApplication] respondsToSelector:@selector(registerUserNotificationSettings:)])
+    {
+        [[UIApplication sharedApplication] registerUserNotificationSettings:[UIUserNotificationSettings settingsForTypes:(UIUserNotificationTypeSound | UIUserNotificationTypeAlert | UIUserNotificationTypeBadge) categories:nil]];
+        
+    }
+    else
+    {
+        [[UIApplication sharedApplication] registerForRemoteNotificationTypes:
+         (UIUserNotificationTypeBadge | UIUserNotificationTypeSound | UIUserNotificationTypeAlert)];
+    }
+}
+- (BOOL) pushNotificationOnOrOff
+{
+    if ([UIApplication instancesRespondToSelector:@selector(isRegisteredForRemoteNotifications)]) {
+        return ([[UIApplication sharedApplication] isRegisteredForRemoteNotifications]);
+    } else {
+        UIRemoteNotificationType types = [[UIApplication sharedApplication] enabledRemoteNotificationTypes];
+        return (types & UIRemoteNotificationTypeAlert);
+    }
+}
+
+#ifdef __IPHONE_8_0
+- (void)application:(UIApplication *)application   didRegisterUserNotificationSettings:   (UIUserNotificationSettings *)notificationSettings
+{
+    //register to receive notifications
+    [application registerForRemoteNotifications];
+}
+
+- (void)application:(UIApplication *)application handleActionWithIdentifier:(NSString   *)identifier forRemoteNotification:(NSDictionary *)userInfo completionHandler:(void(^)())completionHandler
+{
+    //handle the actions
+    if ([identifier isEqualToString:@"declineAction"]){
+    }
+    else if ([identifier isEqualToString:@"answerAction"]){
+    }
+}
+#endif
+/**
+ This method starts the timer which calls selector after a period of time. If its is cancelled before timer calls selector, then the timer is cancelled confirming that device token is received and thus push is enabled.
+ */
+- (void)checkPushEnabledThread
+{
+    [self performSelector:@selector(pushDisabled) withObject:nil afterDelay:10.0];
+}
++ (int)pushType:(NSString *)message
+{
+       return 0;
+}
+
+/** Displays alert that Push Notification is Disabled for this device.
+ */
+- (void)pushDisabled
+{
+  //  UIAlertView *alert =
+    [[UIAlertView alloc] initWithTitle:nil message:@"Push is Disabled" delegate:nil  cancelButtonTitle:@"OK" otherButtonTitles: nil];
+    
+}
+
+/** Displays alert that Push Notification is Enabled for this device.
+ */
+- (void)pushEnabled
+{
+   // UIAlertView *alert =
+    [[UIAlertView alloc] initWithTitle:@"Push" message:@"Push Enabled" delegate:nil  cancelButtonTitle:@"OK" otherButtonTitles: nil];
+    
+   
+}
+
 -(NSUInteger)application:(UIApplication *)application supportedInterfaceOrientationsForWindow:(UIWindow *)window
 {
     if (self.allowRotation) {
@@ -164,6 +266,56 @@ UILabel *activityLabel;
     self.allowRotation = NO;
     
 }
+#pragma ---
+#pragma Push notification
+- (void)application:(UIApplication *)application didRegisterForRemoteNotificationsWithDeviceToken:(NSData *)deviceToken
+{
+    //   NSLog(@"devToken=%@",deviceToken);
+    
+    [AppSingleton sharedInstance].deviceToken =  [[NSString alloc] initWithData:deviceToken encoding:NSUnicodeStringEncoding];
+    
+    NSString *_token = [[deviceToken description] stringByTrimmingCharactersInSet:[NSCharacterSet characterSetWithCharactersInString:@"<>"]];
+    _token = [_token stringByReplacingOccurrencesOfString:@" " withString:@""];
+    
+    [AppSingleton sharedInstance].deviceToken = _token;
+    
+    //   NSLog(@"deviceToken => %@",  [NPUserData sharedNPUserData].deviceToken);
+    
+    [AppGlobal setValueInDefault:DEVICE_TOKEN value:[AppSingleton sharedInstance].deviceToken];
+    
+    //    NSLog(@"stored token %@", [[NSUserDefaults standardUserDefaults] valueForKey:@"devicetoken"]);
+    
+    [[self class] cancelPreviousPerformRequestsWithTarget:self selector:@selector(pushDisabled) object:nil];
+    
+}
+
+- (void)application:(UIApplication*)application didFailToRegisterForRemoteNotificationsWithError:(NSError*)error
+{
+    NSLog(@"Failed to get token, error: %@", error);
+}
+- (void)application:(UIApplication *)application didReceiveRemoteNotification:(NSDictionary *)userInfo
+{
+    //    NSLog(@"login status = %@", [NPUserData sharedNPUserData].isLoggedIn ? @"YES" : @"NO");
+    
+   // NSString *message;
+    
+    //    NSLog(@"Push dictionary = %@", userInfo);
+    
+    NSString *aps = [userInfo valueForKey:@"aps"];
+    
+   // message =
+    [aps valueForKey:@"alert"];
+    
+    //message = [userInfo valueForKey:@"alert"];
+    
+    //   NSLog(@"message %@", message);
+    
+    
+
+    
+    [[NSNotificationCenter defaultCenter] postNotificationName:@"PushNotification" object:nil];
+}
+
 #pragma mark - Core Data stack
 
 @synthesize managedObjectContext = _managedObjectContext;
